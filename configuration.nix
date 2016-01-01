@@ -26,7 +26,7 @@
 
   services = {
 
-    phd.enable = true; 
+    phd.enable = true;
 
     mysql = {
       enable = true;
@@ -42,25 +42,27 @@
     openldap = {
       enable = true;
       extraConfig =
-"##########
-# Basics #
-##########
-include ${pkgs.openldap}/etc/openldap/schema/core.schema
-include ${pkgs.openldap}/etc/openldap/schema/cosine.schema
-include ${pkgs.openldap}/etc/openldap/schema/inetorgperson.schema
-include ${pkgs.openldap}/etc/openldap/schema/nis.schema
+        ''
+          ##########
+          # Basics #
+          ##########
+          include ${pkgs.openldap}/etc/openldap/schema/core.schema
+          include ${pkgs.openldap}/etc/openldap/schema/cosine.schema
+          include ${pkgs.openldap}/etc/openldap/schema/inetorgperson.schema
+          include ${pkgs.openldap}/etc/openldap/schema/nis.schema
 
-##########################
-# Database Configuration #
-##########################
-database bdb
-suffix dc=acelpb,dc=com
-rootdn cn=root,dc=acelpb,dc=com
+          ##########################
+          # Database Configuration #
+          ##########################
+          database bdb
+          suffix dc=acelpb,dc=com
+          rootdn cn=root,dc=acelpb,dc=com
 
-# NOTE: change after first start
-rootpw secret
+          # NOTE: change after first start
+          rootpw secret
 
-directory /var/db/openldap";
+          directory /var/db/openldap
+      '';
     };
 
     jenkins = {
@@ -128,12 +130,12 @@ directory /var/db/openldap";
 	  sslServerKey = "/home/aborsu/.ssl/acelpb/ssl.key";
           enableSSL = true;
         }
-        { 
+        {
           hostName = "phabricator.acelpb.com";
           extraConfig = ''
             RewriteEngine On
             RewriteCond %{HTTPS} !=on
-            RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L] 
+            RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
           '';
         }
         {
