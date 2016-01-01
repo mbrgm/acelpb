@@ -1,0 +1,36 @@
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Acelpb's status page.</title>
+      </head>
+      <body>
+        <h1>Hello, world!</h1>
+        <p>This website is a pet project to test <a href="https://nixos.org/">NixOS</a> in details. The detailed config file for this server can be found <a href="https://github.com/aborsu/acelpb">here</a> and I usually use a fork of the unstable channel of nixos with cherry-picks from master or pull requests that can be found <a href="https://github.com/aborsu/nixpkgs">here</a>.</p>
+        <p>For more information on my current projects refer to my <a href="https://aborsu.github.io/">blog</a>.</p>
+
+        <h1>Current Status</h1>
+        <ul>
+          <li>Owncloud (partial):
+            <ul>
+              <li>Version 7.0 works (ldap plugin is broken as far as I can tell)</li>
+              <li>Webdav is broken in all versions >= 8 </li>
+            </ul>
+          </li>
+
+          <li>OpenLDAP (working):
+            <ul>
+              <li>Need to add ssl support.</li>
+              <li>Secure, currently all access is made using root node, need to create a read-only user.</li>
+            </ul>
+          </li>
+          <li>Jenkins (partial):
+            <ul>
+              <li>SBT plugin not working (partially upstream issue).</li>
+            </ul>
+          </li>
+
+          <li>Gitlab (Not installed)</li>
+          <li>Phabricator (untested)</li>
+        </ul>
+      </body>
+    </html>
