@@ -71,7 +71,7 @@
       extraOptions = [ "--prefix=/jenkins" "--httpListenAddress=localhost" ];
     };
 
-    httpd = let domain1 = "acelpb.com"; in {
+    httpd = let domain1 = "acelpb.local"; in {
       enable = true;
       adminAddr="a.borsu@gmail.com";
       enablePHP = true;
@@ -171,38 +171,6 @@
     openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDKjZS/Z37B0kZ1jfWXNQGEsNU9LM2Y2YcghHqFiO5IuWSu+XzFoRdeeFfcsfF/j5uQbWy+23z2CvuivsdNAdqS4Gl7X+wAg9pG9A+h9BRWEjGN/Llpq0NOPeiFSgLOxFuu4VOU6QzVPpgSLLWqM+av3Ib8q5UHCE49CPIcptwnOFmSQtvk6nDtbZpb9WA+MnL+xOp1P1nXu9JbpUUvCcZuqYWSrg+OMEkFv9ujTzK9uEnUMgQq4N7o4swUpXcs1dKt9Ev96Pr+GlSmcr567l+Ach2nX6+4l01ygzCCzEEzyodFT8qf8xGw3Aak+38Bu/qcqtHXNxPQ4IQgFyhyiyFl jcm@acelpb-" ];
   };
 
-  # The NixOS release to be compatible with for stateful data such as databases.
-  system.stateVersion = "15.09";
-
-  imports =
-    [ # Include the results of the hardware scan.
-      /etc/nixos/hardware-configuration.nix
-    ];
-
-  # Use the GRUB 2 boot loader.
-  boot.loader.grub.enable = true;
-  boot.loader.grub.version = 2;
-  # Define on which hard drive you want to install Grub.
-  boot.loader.grub.device = "/dev/sda";
-
-  # Define your hostname.
-  networking.hostName = "ns358417";
-  networking.hostId = "385cabe4";
-
-  # IPv4 settings
-  networking.interfaces.eth0.ip4 = [
-    { address = "91.121.89.48";
-      prefixLength = 24; } ];
-  networking.defaultGateway = "91.121.89.254";
-  networking.nameservers = [ "213.186.33.99" ];
-
-  # IPv6 settings
-  networking.localCommands =
-    ''
-      ip -6 addr add 2001:41D0:1:8E30::/64 dev eth0
-      ip -6 route add 2001:41D0:1:8Eff:ff:ff:ff:ff dev eth0
-      ip -6 route add default via 2001:41D0:1:8Eff:ff:ff:ff:ff
-    '';
 }
 
 
