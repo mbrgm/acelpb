@@ -59,7 +59,7 @@
           rootdn cn=root,dc=acelpb,dc=com
 
           # NOTE: change after first start
-          rootpw secret
+          rootpw ${builtins.readFile ./private/ldap.rootPwd;}
 
           directory /var/db/openldap
       '';
