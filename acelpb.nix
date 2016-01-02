@@ -68,7 +68,7 @@ in
     jenkins = {
       enable = true;
       port = 2711;
-      extraOptions = [ "--prefix=/jenkins" "--httpListenAddress=localhost" ];
+      listenAddress = "localhost";
     };
 
     gitlab = {
@@ -101,19 +101,6 @@ in
                 AllowOverride FileInfo
                 Require all granted
               </Directory>
-
-
-              ProxyPass         /jenkins  http://localhost:2711/jenkins nocanon
-              ProxyPassReverse  /jenkins  http://localhost:2711/jenkins
-              ProxyRequests     Off
-              AllowEncodedSlashes NoDecode
-
-              # Local reverse proxy authorization override
-              # Most unix distribution deny proxy by default (ie /etc/apache2/mods-enabled/proxy.conf in Ubuntu)
-              <Proxy http://localhost:2711/jenkins*>
-                Order deny,allow
-                Allow from all
-              </Proxy>
             '';
 
           extraSubservices = [
@@ -184,6 +171,35 @@ in
           sslServerChain = if myCfg.domain == "acelpb.local"
             then null
             else myCfg.ssl.gitlab.ca;
+          enableSSL = true;
+        }
+        {
+          hostName = "jenkins." + myCfg.domain;
+          extraConfig = ''
+            # prevent a forward proxy!
+            ProxyRequests off
+
+            # User-Agent / browser identification is used from the original client
+            ProxyVia Off
+            ProxyPreserveHost On
+
+            <Proxy *>
+            Order deny,allow
+            Allow from all
+            </Proxy>
+
+            ProxyPass / http://127.0.0.1:2711/
+            ProxyPassReverse / http://127.0.0.1:2711/
+          '';
+          sslServerCert = if myCfg.domain == "acelpb.local"
+            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
+            else myCfg.ssl.jenkins.crt;
+          sslServerKey = if myCfg.domain == "acelpb.local"
+            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
+            else myCfg.ssl.jenkins.key;
+          sslServerChain = if myCfg.domain == "acelpb.local"
+            then null
+            else myCfg.ssl.jenkins.ca;
           enableSSL = true;
         }
       ];
