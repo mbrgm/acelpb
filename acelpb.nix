@@ -177,13 +177,13 @@ in
           '';
           sslServerCert = if myCfg.domain == "acelpb.local"
             then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
-            else myCfg.ssl.phabricator.crt;
+            else myCfg.ssl.gitlab.crt;
           sslServerKey = if myCfg.domain == "acelpb.local"
             then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
-            else myCfg.ssl.phabricator.key;
+            else myCfg.ssl.gitlab.key;
           sslServerChain = if myCfg.domain == "acelpb.local"
             then null
-            else myCfg.ssl.phabricator.ca;
+            else myCfg.ssl.gitlab.ca;
           enableSSL = true;
         }
       ];
