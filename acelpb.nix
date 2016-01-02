@@ -5,7 +5,7 @@ let
 in
 {
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 389 ];
 
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
@@ -71,17 +71,18 @@ in
       extraOptions = [ "--prefix=/jenkins" "--httpListenAddress=localhost" ];
     };
 
+    gitlab = {
+      enable = true;
+      databasePassword = "some_password";
+    };
+
     httpd = {
       enable = true;
       adminAddr="a.borsu@gmail.com";
       enablePHP = true;
 
       virtualHosts = [
-        { # Catches all connections to unspecified hosts.
-          documentRoot = "/var/www/jcm";
-        }
-        { # Forces all connections on acelpb.com to https
-          hostName = myCfg.domain;
+        { # Forces all connections to https
           extraConfig = ''
             RewriteEngine On
             RewriteCond %{HTTPS} off
@@ -144,14 +145,6 @@ in
         }
         {
           hostName = "phabricator." + myCfg.domain;
-          extraConfig = ''
-            RewriteEngine On
-            RewriteCond %{HTTPS} !=on
-            RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
-          '';
-        }
-        {
-          hostName = "phabricator." + myCfg.domain;
           extraSubservices = [{serviceType = "phabricator";}];
           sslServerCert = if myCfg.domain == "acelpb.local"
             then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
@@ -161,7 +154,36 @@ in
             else myCfg.ssl.phabricator.key;
           sslServerChain = if myCfg.domain == "acelpb.local"
             then null
-            else myCfg.ssl.www.ca;
+            else myCfg.ssl.phabricator.ca;
+          enableSSL = true;
+        }
+        {
+          hostName = "gitlab." + myCfg.domain;
+          extraConfig = ''
+            # prevent a forward proxy!
+            ProxyRequests off
+
+            # User-Agent / browser identification is used from the original client
+            ProxyVia Off
+            ProxyPreserveHost On
+
+            <Proxy *>
+            Order deny,allow
+            Allow from all
+            </Proxy>
+
+            ProxyPass / http://127.0.0.1:8080/
+            ProxyPassReverse / http://127.0.0.1:8080/
+          '';
+          sslServerCert = if myCfg.domain == "acelpb.local"
+            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
+            else myCfg.ssl.phabricator.crt;
+          sslServerKey = if myCfg.domain == "acelpb.local"
+            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
+            else myCfg.ssl.phabricator.key;
+          sslServerChain = if myCfg.domain == "acelpb.local"
+            then null
+            else myCfg.ssl.phabricator.ca;
           enableSSL = true;
         }
       ];
