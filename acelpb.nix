@@ -5,7 +5,7 @@ let
 in
 {
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 389 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
 
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
