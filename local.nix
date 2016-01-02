@@ -9,6 +9,6 @@
       # deployment.targetHost = "192.168.56.10";
       # networking.interfaces.eth1.ip4 = [ { address = "192.168.56.10"; prefixLength = 24; } ];
 
-      imports = [ ./configuration.nix ];
+      imports = [ ./acelpb.nix ];
     };
 }
