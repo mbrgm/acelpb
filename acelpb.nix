@@ -69,6 +69,7 @@ in
       enable = true;
       port = 2711;
       listenAddress = "localhost";
+      packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven ];
     };
 
     gitlab = {
