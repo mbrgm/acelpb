@@ -5,8 +5,8 @@ let
 in
 {
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
-
+  networking.firewall.allowedTCPPorts = [ 22 80 443 389 ];
+  networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
   time.timeZone = "Europe/Brussels";
@@ -14,6 +14,8 @@ in
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
+    ssmtp
+    postfix
     bashCompletion
     php
     nodejs
@@ -24,57 +26,26 @@ in
     wget
   ];
 
-  services = {
+  virtualisation.docker.enable = true;
 
-    phd.enable = true;
-
-    mysql = {
-      enable = true;
-      package = pkgs.mariadb;
-      extraOptions = "sql_mode=STRICT_ALL_TABLES";
+  systemd.services.jenkins-docker = {
+    wantedBy = [ "multi-user.target" ]; 
+    description = "Containerized jenkins server";
+    after = [ "docker.service" ];
+    requires = [ "docker.service" ];
+    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/jenkins-docker ; ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/jenkins-docker ; ${pkgs.docker}/bin/docker pull jenkinsci/jenkins'';
+    serviceConfig = {
+      ExecStart = ''${pkgs.docker}/bin/docker run -p 2711:8080 -p 50000:50000 -v /var/lib/jenkins-docker:/var/jenkins_home --name jenkins-docker jenkinsci/jenkins'';         
+      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 jenkins-docker ; ${pkgs.docker}/bin/docker rm -f jenkins-docker'';
     };
+  };
+
+
+  services = {
 
     postgresql = {
       enable = true;
       package = pkgs.postgresql94;
-    };
-
-    openldap = {
-      enable = true;
-      extraConfig =
-        ''
-          ##########
-          # Basics #
-          ##########
-          include ${pkgs.openldap}/etc/openldap/schema/core.schema
-          include ${pkgs.openldap}/etc/openldap/schema/cosine.schema
-          include ${pkgs.openldap}/etc/openldap/schema/inetorgperson.schema
-          include ${pkgs.openldap}/etc/openldap/schema/nis.schema
-
-          ##########################
-          # Database Configuration #
-          ##########################
-          database bdb
-          suffix dc=acelpb,dc=com
-          rootdn cn=root,dc=acelpb,dc=com
-
-          # NOTE: change after first start
-          rootpw ${myCfg.ldap.password}
-
-          directory /var/db/openldap
-      '';
-    };
-
-    jenkins = {
-      enable = true;
-      port = 2711;
-      listenAddress = "localhost";
-      packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven ];
-    };
-
-    gitlab = {
-      enable = true;
-      databasePassword = "some_password";
     };
 
     httpd = {
@@ -132,49 +103,6 @@ in
           enableSSL = true;
         }
         {
-          hostName = "phabricator." + myCfg.domain;
-          extraSubservices = [{serviceType = "phabricator";}];
-          sslServerCert = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
-            else myCfg.ssl.phabricator.crt;
-          sslServerKey = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
-            else myCfg.ssl.phabricator.key;
-          sslServerChain = if myCfg.domain == "acelpb.local"
-            then null
-            else myCfg.ssl.phabricator.ca;
-          enableSSL = true;
-        }
-        {
-          hostName = "gitlab." + myCfg.domain;
-          extraConfig = ''
-            # prevent a forward proxy!
-            ProxyRequests off
-
-            # User-Agent / browser identification is used from the original client
-            ProxyVia Off
-            ProxyPreserveHost On
-
-            <Proxy *>
-            Order deny,allow
-            Allow from all
-            </Proxy>
-
-            ProxyPass / http://127.0.0.1:8080/
-            ProxyPassReverse / http://127.0.0.1:8080/
-          '';
-          sslServerCert = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
-            else myCfg.ssl.gitlab.crt;
-          sslServerKey = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
-            else myCfg.ssl.gitlab.key;
-          sslServerChain = if myCfg.domain == "acelpb.local"
-            then null
-            else myCfg.ssl.gitlab.ca;
-          enableSSL = true;
-        }
-        {
           hostName = "jenkins." + myCfg.domain;
           extraConfig = ''
             # prevent a forward proxy!
@@ -203,6 +131,25 @@ in
             else myCfg.ssl.jenkins.ca;
           enableSSL = true;
         }
+        {
+          hostName = "sonarqube." + myCfg.domain;
+          extraConfig = ''
+            # prevent a forward proxy!
+            ProxyRequests off
+
+            # User-Agent / browser identification is used from the original client
+            ProxyVia Off
+            ProxyPreserveHost On
+
+            <Proxy *>
+            Order deny,allow
+            Allow from all
+            </Proxy>
+
+            ProxyPass / http://127.0.0.1:9000/
+            ProxyPassReverse / http://127.0.0.1:9000/
+          '';
+        }
       ];
     };
 
@@ -219,7 +166,7 @@ in
   users.extraUsers.aborsu = {
     description = "Augustin Borsu";
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [ "wheel" "docker" ]; 
     openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDT6nGess3TiV7KCZqCzv7wqny1GYsH9bkiT6Vae2Xo8I0YgvkqD6C/QszEk28lu7CMsm2bb8bDkYKm6Ce8jTin+hyobVvlxC5fAYZK8oE4AKn1rHkDqq1wnJwTRIrB97Nc2077BHAv2OLh5G2A/uazkIWxcoIBJNne9fFXY8B98DoB4WsDtBxj7OFnDIm27qX2VtScrr7U95SGjKN6F6MUyFEcFu9GhkXLs8BS/G8oVfSSmHFTBpIeNQ69BX7NXb+mWP98ouD4yGsRSiKZHdSwjVWI1JU4MO0tGkRAZXY2p0vacp+ePh6r0ESHbVUazX4Vof7p1i35VlIg850C9iAq6xhx3b59lYVk6AyAhfj0lujz10+00EkHy6l9BmtzBV1mFmTJpMPFQQ00Hup92ihMyGNglgPs23s3lR8iLjQ7gDpNohHmFKBFSG2Jp2tEhnfuH3tz3NWn4pXPyIUWs5znRb9Sup7/XoRtelZrSEai/EUPeP5RysYMsxiRoms47rD8FWTE0hQFUrHjQzk+RGUd/OCBv3LPR6wiwfRmdIJnNg6yDahNsRiJ3bCqtwjRkdpZ1ezLAzgwNVaNRWq4EEHMfeQ7Oud7yjgdqhb0vvAy5J4ZSHM05+77sNQoAPVEYlEhYJwyfukDMprkImypVhdOplkGaqTxMDvPY46ipGjK5Q== aborsu@mbpro-gus-Ven 16 oct 2015 10:13:03 CEST" ];
   };
 
