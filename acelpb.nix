@@ -5,7 +5,7 @@ let
 in
 {
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 389 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 389 5432 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
@@ -28,14 +28,37 @@ in
 
   virtualisation.docker.enable = true;
 
+  systemd.services.sonarqube-docker = {
+    wantedBy = [ "multi-user.target" ];
+    description = "Containerized sonarqube server";
+    after = [ "docker.service" ];
+    requires = [ "docker.service" ];
+    preStart = ''
+      ${pkgs.postgresql}/bin/createuser -s -r postgres \ ;
+      ${pkgs.postgresql}/bin/createuser --no-superuser --no-createdb --no-createrole sonar || true ; \
+      ${pkgs.postgresql}/bin/createdb sonar -O sonar || true ; \
+      ${pkgs.sudo}/bin/sudo -u postgres ${pkgs.postgresql}/bin/psql -U postgres -d postgres -c "alter user sonar with password sonar;" || true ; \
+      ${pkgs.docker}/bin/docker pull sonarqube'';
+    serviceConfig = {
+      ExecStart = ''
+        docker run -d --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
+                   -e SONARQUBE_JDBC_USERNAME=sonar \
+                   -e SONARQUBE_JDBC_PASSWORD=sonar \
+                   -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com \
+                    sonarqube
+      '';
+      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
+    };
+  };
+
   systemd.services.jenkins-docker = {
-    wantedBy = [ "multi-user.target" ]; 
+    wantedBy = [ "multi-user.target" ];
     description = "Containerized jenkins server";
     after = [ "docker.service" ];
     requires = [ "docker.service" ];
     preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/jenkins-docker ; ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/jenkins-docker ; ${pkgs.docker}/bin/docker pull jenkinsci/jenkins'';
     serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run -p 2711:8080 -p 50000:50000 -v /var/lib/jenkins-docker:/var/jenkins_home --name jenkins-docker jenkinsci/jenkins'';         
+      ExecStart = ''${pkgs.docker}/bin/docker run -p 2711:8080 -p 50000:50000 -v /var/lib/jenkins-docker:/var/jenkins_home --name jenkins-docker jenkinsci/jenkins'';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 jenkins-docker ; ${pkgs.docker}/bin/docker rm -f jenkins-docker'';
     };
   };
@@ -166,7 +189,7 @@ in
   users.extraUsers.aborsu = {
     description = "Augustin Borsu";
     isNormalUser = true;
-    extraGroups = [ "wheel" "docker" ]; 
+    extraGroups = [ "wheel" "docker" ];
     openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDT6nGess3TiV7KCZqCzv7wqny1GYsH9bkiT6Vae2Xo8I0YgvkqD6C/QszEk28lu7CMsm2bb8bDkYKm6Ce8jTin+hyobVvlxC5fAYZK8oE4AKn1rHkDqq1wnJwTRIrB97Nc2077BHAv2OLh5G2A/uazkIWxcoIBJNne9fFXY8B98DoB4WsDtBxj7OFnDIm27qX2VtScrr7U95SGjKN6F6MUyFEcFu9GhkXLs8BS/G8oVfSSmHFTBpIeNQ69BX7NXb+mWP98ouD4yGsRSiKZHdSwjVWI1JU4MO0tGkRAZXY2p0vacp+ePh6r0ESHbVUazX4Vof7p1i35VlIg850C9iAq6xhx3b59lYVk6AyAhfj0lujz10+00EkHy6l9BmtzBV1mFmTJpMPFQQ00Hup92ihMyGNglgPs23s3lR8iLjQ7gDpNohHmFKBFSG2Jp2tEhnfuH3tz3NWn4pXPyIUWs5znRb9Sup7/XoRtelZrSEai/EUPeP5RysYMsxiRoms47rD8FWTE0hQFUrHjQzk+RGUd/OCBv3LPR6wiwfRmdIJnNg6yDahNsRiJ3bCqtwjRkdpZ1ezLAzgwNVaNRWq4EEHMfeQ7Oud7yjgdqhb0vvAy5J4ZSHM05+77sNQoAPVEYlEhYJwyfukDMprkImypVhdOplkGaqTxMDvPY46ipGjK5Q== aborsu@mbpro-gus-Ven 16 oct 2015 10:13:03 CEST" ];
   };
 
