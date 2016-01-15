@@ -36,10 +36,10 @@ in
     preStart = ''
       ${pkgs.postgresql}/bin/createuser --no-superuser --no-createdb --no-createrole sonar || true ; \
       ${pkgs.postgresql}/bin/createdb sonar -O sonar || true ; \
-      ${pkgs.sudo}/bin/sudo -u postgres ${pkgs.postgresql}/bin/psql -U postgres -d postgres -c "alter user sonar with password sonar;" || true ; \
+      ${pkgs.sudo}/bin/sudo -u postgres ${pkgs.postgresql}/bin/psql -U postgres -d postgres -c "alter user sonar with password 'sonar';" ; \
       ${pkgs.docker}/bin/docker pull sonarqube'';
     serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run -d --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
+      ExecStart = ''${pkgs.docker}/bin/docker run --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
                       -e SONARQUBE_JDBC_USERNAME=sonar \
                       -e SONARQUBE_JDBC_PASSWORD=sonar \
                       -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com:5432/sonar \
