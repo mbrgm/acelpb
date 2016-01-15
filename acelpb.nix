@@ -33,16 +33,9 @@ in
     description = "Containerized sonarqube server";
     after = [ "docker.service" ];
     requires = [ "docker.service" ];
-    preStart = ''
-      ${pkgs.postgresql}/bin/createuser --no-superuser --no-createdb --no-createrole sonar || true ; \
-      ${pkgs.postgresql}/bin/createdb sonar -O sonar || true ; \
-      ${pkgs.sudo}/bin/sudo -u postgres ${pkgs.postgresql}/bin/psql -U postgres -d postgres -c "alter user sonar with password 'sonar';" ; \
-      ${pkgs.docker}/bin/docker pull sonarqube'';
+    preStart = ''${pkgs.docker}/bin/docker pull sonarqube'';
     serviceConfig = {
       ExecStart = ''${pkgs.docker}/bin/docker run --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
-                      -e SONARQUBE_JDBC_USERNAME=sonar \
-                      -e SONARQUBE_JDBC_PASSWORD=sonar \
-                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com:5432/sonar \
                       sonarqube
       '';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
@@ -170,6 +163,16 @@ in
             ProxyPass / http://127.0.0.1:9000/
             ProxyPassReverse / http://127.0.0.1:9000/
           '';
+          sslServerCert = if myCfg.domain == "acelpb.local"
+            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
+            else myCfg.ssl.sonarqube.crt;
+          sslServerKey = if myCfg.domain == "acelpb.local"
+            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
+            else myCfg.ssl.sonarqube.key;
+          sslServerChain = if myCfg.domain == "acelpb.local"
+            then null
+            else myCfg.ssl.sonarqube.ca;
+          enableSSL = true;
         }
       ];
     };
