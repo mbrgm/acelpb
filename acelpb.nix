@@ -34,7 +34,6 @@ in
     after = [ "docker.service" ];
     requires = [ "docker.service" ];
     preStart = ''
-      ${pkgs.postgresql}/bin/createuser -s -r postgres \ ;
       ${pkgs.postgresql}/bin/createuser --no-superuser --no-createdb --no-createrole sonar || true ; \
       ${pkgs.postgresql}/bin/createdb sonar -O sonar || true ; \
       ${pkgs.sudo}/bin/sudo -u postgres ${pkgs.postgresql}/bin/psql -U postgres -d postgres -c "alter user sonar with password sonar;" || true ; \
