@@ -42,7 +42,7 @@ in
       ExecStart = ''${pkgs.docker}/bin/docker run -d --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
                       -e SONARQUBE_JDBC_USERNAME=sonar \
                       -e SONARQUBE_JDBC_PASSWORD=sonar \
-                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com \
+                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com:5432/sonar \
                       sonarqube
       '';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
