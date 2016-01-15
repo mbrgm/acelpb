@@ -40,12 +40,11 @@ in
       ${pkgs.sudo}/bin/sudo -u postgres ${pkgs.postgresql}/bin/psql -U postgres -d postgres -c "alter user sonar with password sonar;" || true ; \
       ${pkgs.docker}/bin/docker pull sonarqube'';
     serviceConfig = {
-      ExecStart = ''
-        docker run -d --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
-                   -e SONARQUBE_JDBC_USERNAME=sonar \
-                   -e SONARQUBE_JDBC_PASSWORD=sonar \
-                   -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com \
-                    sonarqube
+      ExecStart = ''docker run -d --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
+                      -e SONARQUBE_JDBC_USERNAME=sonar \
+                      -e SONARQUBE_JDBC_PASSWORD=sonar \
+                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb:com \
+                      sonarqube
       '';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
     };
