@@ -14,57 +14,23 @@ in
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-    ssmtp
-    postfix
     bashCompletion
-    php
-    nodejs
-    python
     git
     vim
-    sbt
     wget
-    docker
   ];
 
   virtualisation.docker.enable = true;
 
-  systemd.services.sonarqube-docker = {
-    wantedBy = [ "multi-user.target" ];
-    description = "Containerized sonarqube server";
-    after = [ "docker.service" ];
-    requires = [ "docker.service" ];
-    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/sonarqube-docker/conf ; \
-                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/sonarqube-docker/data ; \
-                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/sonarqube-docker/extensions ; \
-                 ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/sonarqube-docker ; \
-                 ${pkgs.docker}/bin/docker pull sonarqube'';
-    serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
-                      -v /var/lib/sonarqube-docker/conf:/opt/sonarqube/conf \
-                      -v /var/lib/sonarqube-docker/data:/opt/sonarqube/data \
-                      -v /var/lib/sonarqube-docker/extensions:/opt/sonarqube/extensions \
-                      sonarqube
-      '';
-      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
-    };
-  };
-
-  systemd.services.jenkins-docker = {
-    wantedBy = [ "multi-user.target" ];
-    description = "Containerized jenkins server";
-    after = [ "docker.service" ];
-    requires = [ "docker.service" ];
-    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/jenkins-docker ; ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/jenkins-docker ; ${pkgs.docker}/bin/docker pull jenkinsci/jenkins'';
-    serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run -p 2711:8080 -p 50000:50000 -v /var/lib/jenkins-docker:/var/jenkins_home --name jenkins-docker jenkinsci/jenkins'';
-      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 jenkins-docker ; ${pkgs.docker}/bin/docker rm -f jenkins-docker'';
-    };
-  };
-
-
   services = {
 
+    jenkins = {
+      enable = true;
+      port = 2711;
+      listenAddress = "localhost";
+      packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim ];
+    };
+    
     postgresql = {
       enable = true;
       package = pkgs.postgresql94;
