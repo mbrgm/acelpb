@@ -168,7 +168,7 @@ in
           sslServerChain = if myCfg.domain == "acelpb.local"
             then null
             else myCfg.ssl.sonarqube.ca;
-          enableSSL = true;
+          enableSSL = false;
         }
       ];
     };
