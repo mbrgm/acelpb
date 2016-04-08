@@ -2,10 +2,20 @@
 { config, pkgs, ... }:
 let
   myCfg = builtins.fromJSON (builtins.readFile ./private/config.json);
+
 in
 {
+
+  users.extraUsers.phpfpm = {
+    description = "PHP FastCGI user";
+    uid = 2222;
+    group = "phpfpm";
+  };
+
+  users.extraGroups.phpfpm.gid = 2222;
+
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 5432 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 5432 7630 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
@@ -57,6 +67,9 @@ in
                       -v /var/lib/sonarqube-docker/conf:/opt/sonarqube/conf \
                       -v /var/lib/sonarqube-docker/data:/opt/sonarqube/data \
                       -v /var/lib/sonarqube-docker/extensions:/opt/sonarqube/extensions \
+                      -e SONARQUBE_JDBC_USERNAME=sonarqube \
+                      -e SONARQUBE_JDBC_PASSWORD=bobisgreat \
+                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb.com/sonarqube \
                       sonarqube
       '';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
@@ -66,44 +79,78 @@ in
   services = {
 
     jenkins = {
-      enable = false;
+      enable = true;
       port = 2711;
       listenAddress = "localhost";
       extraGroups = [ "docker" ];
       packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim pkgs.python3 pkgs.docker pkgs.pythonPackages.docker_compose ];
+    };
+
+    gitlab = {
+      port = 2713;
+      enable = true;
+      databasePassword = "bobisgreat";
     };
     
     postgresql = {
       enable = true;
       package = pkgs.postgresql94;
       enableTCPIP = true;
-      authentication = "host ownclouddock ownclouddock  0.0.0.0/0  md5";
+      authentication = ''
+        host ownclouddock ownclouddock 172.17.0.0/16 md5
+        host sonarqube sonarqube 172.17.0.0/16 md5
+      '';
     };
 
     nginx = {
+
       enable = true;
+
       httpConfig = ''
         server {
-          server_name *.acelpb.com;
           listen 80;
-          listen [::]:80;
+          server_name *.acelpb.com;
+
+          location /.well-known/acme-challenge {
+            root /var/www/acme.pastespace.org;
+          }
+
+          location / {
+            return 301 https://$host$request_uri;
+          }
+        }
       
+        server {
+          listen 80	default_server;
+          listen [::]:80	default_server;
+          server_name _;
+
           location /.well-known/acme-challenge {
             root /var/www/acme.pastespace.org;
           }
       
           location / {
-            return 301 https://$host$request_uri;
+            return 301 https://www.acelpb.com;
           }
         }
-        
+ 
         server {
-          listen 80	default_server;
-          listen [::]:80	default_server;
-          server_name _;
-      
+          server_name sonarqube.acelpb.com;
+#           listen 80;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
           location / {
-            return 301 https://www.acelpb.com;
+            proxy_set_header        Host $host;
+            proxy_set_header        X-Real-IP $remote_addr;
+            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_redirect http:// https://;
+            proxy_pass http://localhost:9000;
           }
         }
 
@@ -117,26 +164,64 @@ in
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
           
           location / {
+            proxy_set_header        Host $host;
+            proxy_set_header        X-Real-IP $remote_addr;
+            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_redirect http:// https://;
             proxy_pass http://localhost:2711;
-            proxy_set_header X-Forwarded-Proto $scheme;
           }
         }
-
+ 
         server {
+          listen 443 ssl;
+          listen [::]:443 ssl;
           server_name owncloud.acelpb.com;
-          listen 443;
-          listen [::]:443;
-          
-          ssl	on;
+       
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem; 
+        
           add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
-          
+
+          # set max upload size
+          client_max_body_size 10G;
+        
+          gzip off;
+
           location / {
             proxy_pass http://localhost:2712;
           }
         }
-	
+
+        server {
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          server_name gitlab.acelpb.com;
+       
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem; 
+        
+          # set max upload size
+          client_max_body_size 1G;
+
+          location / {
+            ## If you use https make sure you disable gzip compression
+            ## to be safe against BREACH attack.
+            gzip                    off;
+
+            proxy_read_timeout      300;
+            proxy_connect_timeout   300;
+            proxy_redirect          off;
+
+            proxy_set_header        Host                $http_host;
+            proxy_set_header        X-Real-IP           $remote_addr;
+            proxy_set_header        X-Forwarded-For     $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto   https;
+            proxy_set_header        X-Frame-Options     SAMEORIGIN;
+            proxy_pass http://localhost:2713;
+          }
+        }
+
         server {
           server_name *.acelpb.com acelpb.com;
           listen 443;
@@ -149,8 +234,24 @@ in
           location / {
             root /var/www/root;
           }
-        }'';
+        }
+      '';
+
     };
+
+    phpfpm.poolConfigs.test = ''
+      listen = /run/phpfpm/test
+      listen.owner = nginx
+      listen.group = nginx
+      listen.mode = 0660
+      user = phpfpm
+      pm = dynamic
+      pm.max_children = 75
+      pm.start_servers = 10
+      pm.min_spare_servers = 5
+      pm.max_spare_servers = 20
+      pm.max_requests = 500
+    '';
 
     openssh.enable = true;
 
