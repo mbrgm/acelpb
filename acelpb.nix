@@ -15,7 +15,7 @@ in
   users.extraGroups.phpfpm.gid = 2222;
 
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 5432 7630 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
@@ -26,6 +26,8 @@ in
   environment.systemPackages = with pkgs; [
     bashCompletion
     git
+    git-hub
+    squid
     vim
     wget
   ];
@@ -86,12 +88,6 @@ in
       packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim pkgs.python3 pkgs.docker pkgs.pythonPackages.docker_compose ];
     };
 
-    gitlab = {
-      port = 2713;
-      enable = true;
-      databasePassword = "bobisgreat";
-    };
-    
     postgresql = {
       enable = true;
       package = pkgs.postgresql94;
@@ -136,13 +132,14 @@ in
  
         server {
           server_name sonarqube.acelpb.com;
-#           listen 80;
           listen 443;
           listen [::]:443;
           
           ssl	on;
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          # ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          # ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          ssl_certificate  /var/lib/startssl/acelpb.com/sonarqube/fullchain.pem;
+          ssl_certificate_key /var/lib/startssl/acelpb.com/sonarqube/key.pem;
           
           location / {
             proxy_set_header        Host $host;
@@ -194,35 +191,6 @@ in
         }
 
         server {
-          listen 443 ssl;
-          listen [::]:443 ssl;
-          server_name gitlab.acelpb.com;
-       
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem; 
-        
-          # set max upload size
-          client_max_body_size 1G;
-
-          location / {
-            ## If you use https make sure you disable gzip compression
-            ## to be safe against BREACH attack.
-            gzip                    off;
-
-            proxy_read_timeout      300;
-            proxy_connect_timeout   300;
-            proxy_redirect          off;
-
-            proxy_set_header        Host                $http_host;
-            proxy_set_header        X-Real-IP           $remote_addr;
-            proxy_set_header        X-Forwarded-For     $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto   https;
-            proxy_set_header        X-Frame-Options     SAMEORIGIN;
-            proxy_pass http://localhost:2713;
-          }
-        }
-
-        server {
           server_name *.acelpb.com acelpb.com;
           listen 443;
           listen [::]:443;
@@ -239,20 +207,6 @@ in
 
     };
 
-    phpfpm.poolConfigs.test = ''
-      listen = /run/phpfpm/test
-      listen.owner = nginx
-      listen.group = nginx
-      listen.mode = 0660
-      user = phpfpm
-      pm = dynamic
-      pm.max_children = 75
-      pm.start_servers = 10
-      pm.min_spare_servers = 5
-      pm.max_spare_servers = 20
-      pm.max_requests = 500
-    '';
-
     openssh.enable = true;
 
     xserver.enable = false;
@@ -264,6 +218,7 @@ in
       "acelpb.com" = {
         webroot = "/var/www/acme.pastespace.org";
         extraDomains = {
+          "mesos.acelpb.com" = null;
           "sonarqube.acelpb.com" = null;
           "owncloud.acelpb.com" = null;
           "www.acelpb.com" = null;
