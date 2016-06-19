@@ -191,6 +191,34 @@ in
         }
 
         server {
+          server_name jcm.acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
+          location / {
+            root /var/www/jcm;
+          }
+        }
+
+        server {
+          server_name jess.acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
+          location / {
+            root /var/www/jess;
+          }
+        }
+
+        server {
           server_name *.acelpb.com acelpb.com;
           listen 443;
           listen [::]:443;
@@ -218,7 +246,8 @@ in
       "acelpb.com" = {
         webroot = "/var/www/acme.pastespace.org";
         extraDomains = {
-          "mesos.acelpb.com" = null;
+          "jess.acelpb.com" = null;
+          "jcm.acelpb.com" = null;
           "sonarqube.acelpb.com" = null;
           "owncloud.acelpb.com" = null;
           "www.acelpb.com" = null;
