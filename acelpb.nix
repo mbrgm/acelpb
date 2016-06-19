@@ -2,10 +2,20 @@
 { config, pkgs, ... }:
 let
   myCfg = builtins.fromJSON (builtins.readFile ./private/config.json);
+
 in
 {
+
+  users.extraUsers.phpfpm = {
+    description = "PHP FastCGI user";
+    uid = 2222;
+    group = "phpfpm";
+  };
+
+  users.extraGroups.phpfpm.gid = 2222;
+
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 389 5432 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
@@ -14,21 +24,36 @@ in
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-    ssmtp
-    postfix
     bashCompletion
-    php
-    nodejs
-    python
     git
+    git-hub
+    squid
     vim
-    sbt
     wget
-    docker
   ];
 
   virtualisation.docker.enable = true;
 
+  systemd.services.owncloud-docker = {
+    wantedBy = [ "multi-user.target" ];
+    description = "Containerized sonarqube server";
+    after = [ "docker.service" ];
+    requires = [ "docker.service" ];
+    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/apps ; \
+                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/data ; \
+                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/config ; \
+                 ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/sonarqube-docker ; \
+                 ${pkgs.docker}/bin/docker pull owncloud'';
+    serviceConfig = {
+      ExecStart = ''${pkgs.docker}/bin/docker run --name owncloud-docker -p 2712:80 \
+                      -v /var/lib/owncloud-docker/apps:/var/www/html/apps \
+                      -v /var/lib/owncloud-docker/config:/var/www/html/config \
+                      -v /var/lib/owncloud-docker/data:/var/www/html/data \
+                      owncloud
+      '';
+      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 owncloud-docker ; ${pkgs.docker}/bin/docker rm -f owncloud-docker'';
+    };
+  };
   systemd.services.sonarqube-docker = {
     wantedBy = [ "multi-user.target" ];
     description = "Containerized sonarqube server";
@@ -44,151 +69,194 @@ in
                       -v /var/lib/sonarqube-docker/conf:/opt/sonarqube/conf \
                       -v /var/lib/sonarqube-docker/data:/opt/sonarqube/data \
                       -v /var/lib/sonarqube-docker/extensions:/opt/sonarqube/extensions \
+                      -e SONARQUBE_JDBC_USERNAME=sonarqube \
+                      -e SONARQUBE_JDBC_PASSWORD=bobisgreat \
+                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb.com/sonarqube \
                       sonarqube
       '';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
     };
   };
 
-  systemd.services.jenkins-docker = {
-    wantedBy = [ "multi-user.target" ];
-    description = "Containerized jenkins server";
-    after = [ "docker.service" ];
-    requires = [ "docker.service" ];
-    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/jenkins-docker ; ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/jenkins-docker ; ${pkgs.docker}/bin/docker pull jenkinsci/jenkins'';
-    serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run -p 2711:8080 -p 50000:50000 -v /var/lib/jenkins-docker:/var/jenkins_home --name jenkins-docker jenkinsci/jenkins'';
-      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 jenkins-docker ; ${pkgs.docker}/bin/docker rm -f jenkins-docker'';
-    };
-  };
-
-
   services = {
+
+    jenkins = {
+      enable = true;
+      port = 2711;
+      listenAddress = "localhost";
+      extraGroups = [ "docker" ];
+      packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim pkgs.python3 pkgs.docker pkgs.pythonPackages.docker_compose ];
+    };
 
     postgresql = {
       enable = true;
       package = pkgs.postgresql94;
+      enableTCPIP = true;
+      authentication = ''
+        host ownclouddock ownclouddock 172.17.0.0/16 md5
+        host sonarqube sonarqube 172.17.0.0/16 md5
+      '';
     };
 
-    httpd = {
+    nginx = {
+
       enable = true;
-      adminAddr="a.borsu@gmail.com";
-      enablePHP = true;
 
-      virtualHosts = [
-        { # Forces all connections to https
-          extraConfig = ''
-            RewriteEngine On
-            RewriteCond %{HTTPS} off
-            RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
-          '';
+      httpConfig = ''
+        server {
+          listen 80;
+          server_name *.acelpb.com;
+
+          location /.well-known/acme-challenge {
+            root /var/www/acme.pastespace.org;
+          }
+
+          location / {
+            return 301 https://$host$request_uri;
+          }
         }
-        { # hostname acelpb.com with document root and owncloud
-          hostName = myCfg.domain;
-          documentRoot = "/var/www/root";
-          extraConfig =
-            ''
-              Alias /jcm /var/www/jcm
+      
+        server {
+          listen 80	default_server;
+          listen [::]:80	default_server;
+          server_name _;
 
-              <Directory /var/www/jcm>
-                Options Indexes FollowSymLinks
-                AllowOverride FileInfo
-                Require all granted
-              </Directory>
-            '';
-
-          extraSubservices = [
-            {
-              trustedDomain = myCfg.domain;
-              urlPrefix = "/owncloud";
-              serviceType = "owncloud";
-              dbUser = myCfg.owncloud.dbUser;
-              dbPassword = myCfg.owncloud.dbPassword;
-              adminUser = myCfg.owncloud.adminUser;
-              adminPassword = myCfg.owncloud.adminPassword;
-            }
-          ];
-          # Regarding server certificates and keys, nix store is readable by anyone
-          # So if I put the name in a public config any user able to run a simple command
-          # on the server could get a copy of the key.
-          # On the other hand, my local instances all run locally and I destroy and create
-          # them multiple time a day so copying the certificates by hand would get tiresome.
-          sslServerCert = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
-            else myCfg.ssl.www.crt;
-      	  sslServerKey = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
-            else myCfg.ssl.www.key;
-          sslServerChain = if myCfg.domain == "acelpb.local"
-            then null
-            else myCfg.ssl.www.ca;
-          enableSSL = true;
+          location /.well-known/acme-challenge {
+            root /var/www/acme.pastespace.org;
+          }
+      
+          location / {
+            return 301 https://www.acelpb.com;
+          }
         }
-        {
-          hostName = "jenkins." + myCfg.domain;
-          extraConfig = ''
-            # prevent a forward proxy!
-            ProxyRequests off
-
-            # User-Agent / browser identification is used from the original client
-            ProxyVia Off
-            ProxyPreserveHost On
-
-            <Proxy *>
-            Order deny,allow
-            Allow from all
-            </Proxy>
-
-            ProxyPass / http://127.0.0.1:2711/
-            ProxyPassReverse / http://127.0.0.1:2711/
-          '';
-          sslServerCert = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
-            else myCfg.ssl.jenkins.crt;
-          sslServerKey = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
-            else myCfg.ssl.jenkins.key;
-          sslServerChain = if myCfg.domain == "acelpb.local"
-            then null
-            else myCfg.ssl.jenkins.ca;
-          enableSSL = true;
+ 
+        server {
+          server_name sonarqube.acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          # ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          # ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          ssl_certificate  /var/lib/startssl/acelpb.com/sonarqube/fullchain.pem;
+          ssl_certificate_key /var/lib/startssl/acelpb.com/sonarqube/key.pem;
+          
+          location / {
+            proxy_set_header        Host $host;
+            proxy_set_header        X-Real-IP $remote_addr;
+            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_redirect http:// https://;
+            proxy_pass http://localhost:9000;
+          }
         }
-        {
-          hostName = "sonarqube." + myCfg.domain;
-          extraConfig = ''
-            # prevent a forward proxy!
-            ProxyRequests off
 
-            # User-Agent / browser identification is used from the original client
-            ProxyVia Off
-            ProxyPreserveHost On
-
-            <Proxy *>
-            Order deny,allow
-            Allow from all
-            </Proxy>
-
-            ProxyPass / http://127.0.0.1:9000/
-            ProxyPassReverse / http://127.0.0.1:9000/
-          '';
-          sslServerCert = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.crt" (builtins.readFile ./private/server.crt)
-            else myCfg.ssl.sonarqube.crt;
-          sslServerKey = if myCfg.domain == "acelpb.local"
-            then builtins.toFile "ssl.key" (builtins.readFile ./private/server.key)
-            else myCfg.ssl.sonarqube.key;
-          sslServerChain = if myCfg.domain == "acelpb.local"
-            then null
-            else myCfg.ssl.sonarqube.ca;
-          enableSSL = true;
+        server {
+          server_name jenkins.acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
+          location / {
+            proxy_set_header        Host $host;
+            proxy_set_header        X-Real-IP $remote_addr;
+            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_redirect http:// https://;
+            proxy_pass http://localhost:2711;
+          }
         }
-      ];
+ 
+        server {
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          server_name owncloud.acelpb.com;
+       
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem; 
+        
+          add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+
+          # set max upload size
+          client_max_body_size 10G;
+        
+          gzip off;
+
+          location / {
+            proxy_pass http://localhost:2712;
+          }
+        }
+
+        server {
+          server_name jcm.acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
+          location / {
+            root /var/www/jcm;
+          }
+        }
+
+        server {
+          server_name jess.acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
+          location / {
+            root /var/www/jess;
+          }
+        }
+
+        server {
+          server_name *.acelpb.com acelpb.com;
+          listen 443;
+          listen [::]:443;
+          
+          ssl	on;
+          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+          
+          location / {
+            root /var/www/root;
+          }
+        }
+      '';
+
     };
 
     openssh.enable = true;
 
     xserver.enable = false;
 
+  };
+
+  security.acme = {
+    certs = {
+      "acelpb.com" = {
+        webroot = "/var/www/acme.pastespace.org";
+        extraDomains = {
+          "jess.acelpb.com" = null;
+          "jcm.acelpb.com" = null;
+          "sonarqube.acelpb.com" = null;
+          "owncloud.acelpb.com" = null;
+          "www.acelpb.com" = null;
+          "jenkins.acelpb.com" = null;
+        };
+      email = "a.borsu@gmail.com";
+      postRun = "systemctl reload nginx.service";
+      };
+    };
   };
 
   security.sudo.wheelNeedsPassword = false;
@@ -206,6 +274,12 @@ in
     isNormalUser = true;
     description = "Jean-Christophe Maigrot";
     openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDKjZS/Z37B0kZ1jfWXNQGEsNU9LM2Y2YcghHqFiO5IuWSu+XzFoRdeeFfcsfF/j5uQbWy+23z2CvuivsdNAdqS4Gl7X+wAg9pG9A+h9BRWEjGN/Llpq0NOPeiFSgLOxFuu4VOU6QzVPpgSLLWqM+av3Ib8q5UHCE49CPIcptwnOFmSQtvk6nDtbZpb9WA+MnL+xOp1P1nXu9JbpUUvCcZuqYWSrg+OMEkFv9ujTzK9uEnUMgQq4N7o4swUpXcs1dKt9Ev96Pr+GlSmcr567l+Ach2nX6+4l01ygzCCzEEzyodFT8qf8xGw3Aak+38Bu/qcqtHXNxPQ4IQgFyhyiyFl jcm@acelpb-" ];
+  };
+
+  users.extraUsers.jess = {
+    isNormalUser = true;
+    description = "";
+    openssh.authorizedKeys.keys = [ ];
   };
 
 }
