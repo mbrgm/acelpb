@@ -15,7 +15,7 @@ in
   users.extraGroups.phpfpm.gid = 2222;
 
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 5432 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
