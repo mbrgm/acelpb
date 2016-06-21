@@ -30,8 +30,8 @@
   # IPv6 settings
   networking.localCommands =
     ''
-      ip -6 addr add 2001:41D0:1:8E30::/64 dev eth0
-      ip -6 route add 2001:41D0:1:8Eff:ff:ff:ff:ff dev eth0
+      ip -6 addr add 2001:41D0:1:8E30::/64 dev enp3s0
+      ip -6 route add 2001:41D0:1:8Eff:ff:ff:ff:ff dev enp3s0
       ip -6 route add default via 2001:41D0:1:8Eff:ff:ff:ff:ff
     '';
 }
