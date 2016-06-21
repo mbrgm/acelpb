@@ -279,7 +279,7 @@ in
   users.extraUsers.jess = {
     isNormalUser = true;
     description = "";
-    openssh.authorizedKeys.keys = [ ];
+    openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzZlG8Vp486YVQFPpDvaZnQaq/qol4EEH1DpHvvapjeQZx8xMA0cnEXBW4DHU/GyXkAS16S3xJoJq6LD5Kb6s428I7BWw1lG4OtEh6lrkssQOeMy/TvlaJi4Uy3Dv6oXJDv87epsx9T0PcQ03PdXQchn/REBY/wFX4YlJ3KQylYBNkb1Yhan9MED/3LjU2xOrMgs56Ta6jvzciOlA5gOvOCeUdSxd1Q16zcV+rOAvn6HdGPoon6Q4rclzoUvPofxfcnVgDuKYT5LO/aH35eFmKBruYVrZ/wJKm5g4kZtaHbThfyTO9j+U3pTWBrm4EXSAB/5ezu1NaFpSBz2ReQaJ3Q== rsa-key-20160621" ];
   };
 
 }
