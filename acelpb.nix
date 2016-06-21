@@ -5,15 +5,6 @@ let
 
 in
 {
-
-  users.extraUsers.phpfpm = {
-    description = "PHP FastCGI user";
-    uid = 2222;
-    group = "phpfpm";
-  };
-
-  users.extraGroups.phpfpm.gid = 2222;
-
   networking.firewall.allowPing = true;
   networking.firewall.allowedTCPPorts = [ 22 80 443 5432 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
@@ -97,12 +88,39 @@ in
         host sonarqube sonarqube 172.17.0.0/16 md5
       '';
     };
+    
+    phpfpm = {
+      poolConfigs = {
+        deadpool = '' 
+  
+          listen = /run/phpfpm/deadpool
+          listen.owner = nginx 
+          listen.group = nginx 
+          listen.mode = 0660
+          user = nginx
+          pm = dynamic
+          pm.max_children = 75
+          pm.start_servers = 10
+          pm.min_spare_servers = 5
+          pm.max_spare_servers = 20
+          pm.max_requests = 500 
+          
+          php_flag[display_errors] = on
+          php_value[date.timezone] = "Europe/Berlin"
+          php_admin_value[error_log] = /var/log/phpfpm_deadpool.log
+          php_admin_flag[log_errors] = on
+          php_admin_value[open_basedir] = /var/www 
+        '';
+      };
+    };
 
     nginx = {
 
       enable = true;
 
       httpConfig = ''
+        error_log /var/log/nginx/error.log;
+
         server {
           listen 80;
           server_name *.acelpb.com;
@@ -213,8 +231,17 @@ in
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
           
+          root /var/www/jess;
           location / {
-            root /var/www/jess;
+            index    index.html index.htm;
+          }
+          
+          location ~ \.php$ {
+             try_files $uri =404;
+             include ${pkgs.nginx}/conf/fastcgi_params;
+             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+             fastcgi_pass   unix:/run/phpfpm/deadpool;
+             fastcgi_index  index.php;
           }
         }
 
