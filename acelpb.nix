@@ -6,7 +6,7 @@ let
 in
 {
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 5432 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 3306 5432 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
@@ -78,6 +78,11 @@ in
       extraGroups = [ "docker" ];
       packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim pkgs.python3 pkgs.docker pkgs.pythonPackages.docker_compose ];
     };
+
+    mysql = {
+      enable = true;
+      package = pkgs.mariadb;
+    }; 
 
     postgresql = {
       enable = true;
@@ -165,7 +170,7 @@ in
             proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header        X-Forwarded-Proto $scheme;
             proxy_redirect http:// https://;
-            proxy_pass http://localhost:9000;
+            proxy_pass http://localhost:2713;
           }
         }
 
