@@ -222,8 +222,18 @@ in
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
           
+          root /var/www/jcm;
           location / {
-            root /var/www/jcm;
+            index    index.html index.htm;
+          }
+          
+          location ~ \.php$ {
+             index    index.php
+             try_files $uri =404;
+             include ${pkgs.nginx}/conf/fastcgi_params;
+             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+             fastcgi_pass   unix:/run/phpfpm/deadpool;
+             fastcgi_index  index.php;
           }
         }
 
@@ -242,6 +252,7 @@ in
           }
           
           location ~ \.php$ {
+             index    index.php
              try_files $uri =404;
              include ${pkgs.nginx}/conf/fastcgi_params;
              fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
