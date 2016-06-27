@@ -18,6 +18,7 @@ in
     bashCompletion
     git
     git-hub
+    perl
     squid
     vim
     wget
@@ -93,7 +94,11 @@ in
         host sonarqube sonarqube 172.17.0.0/16 md5
       '';
     };
-    
+   
+    fcgiwrap = {
+      enable = true;
+    };    
+ 
     phpfpm = {
       poolConfigs = {
         deadpool = '' 
@@ -248,16 +253,23 @@ in
           
           root /var/www/jess;
           location / {
-            index    index.html index.htm;
+            index    index.html index.htm index.php index.pl;
           }
           
           location ~ \.php$ {
-             index    index.php
              try_files $uri =404;
              include ${pkgs.nginx}/conf/fastcgi_params;
              fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
              fastcgi_pass   unix:/run/phpfpm/deadpool;
              fastcgi_index  index.php;
+          }
+
+          location ~ \.pl$ {
+             try_files $uri =404;
+             include ${pkgs.nginx}/conf/fastcgi_params;
+             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+             fastcgi_pass   unix:/run/fcgiwrap.sock;
+             fastcgi_index  index.pl;
           }
         }
 
