@@ -5,9 +5,17 @@ let
 
 in
 {
+  imports =
+    [
+      ./sonarqube.nix
+      ./owncloud.nix
+      ./jenkins.nix
+    ];
+
   networking.firewall.allowPing = true;
   networking.firewall.allowedTCPPorts = [ 22 80 443 3306 5432 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
+
   # Select internationalisation properties.
   i18n.defaultLocale = "fr_BE.UTF-8";
   time.timeZone = "Europe/Brussels";
@@ -18,7 +26,7 @@ in
     bashCompletion
     perlPackages.CGI
     perlPackages.DBI
-    perlPackages.DBDmysql	
+    perlPackages.DBDmysql
     git
     git-hub
     perl
@@ -29,64 +37,12 @@ in
 
   virtualisation.docker.enable = true;
 
-  systemd.services.owncloud-docker = {
-    wantedBy = [ "multi-user.target" ];
-    description = "Containerized sonarqube server";
-    after = [ "docker.service" ];
-    requires = [ "docker.service" ];
-    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/apps ; \
-                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/data ; \
-                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/config ; \
-                 ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/sonarqube-docker ; \
-                 ${pkgs.docker}/bin/docker pull owncloud'';
-    serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run --name owncloud-docker -p 2712:80 \
-                      -v /var/lib/owncloud-docker/apps:/var/www/html/apps \
-                      -v /var/lib/owncloud-docker/config:/var/www/html/config \
-                      -v /var/lib/owncloud-docker/data:/var/www/html/data \
-                      owncloud
-      '';
-      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 owncloud-docker ; ${pkgs.docker}/bin/docker rm -f owncloud-docker'';
-    };
-  };
-  systemd.services.sonarqube-docker = {
-    wantedBy = [ "multi-user.target" ];
-    description = "Containerized sonarqube server";
-    after = [ "docker.service" ];
-    requires = [ "docker.service" ];
-    preStart = ''${pkgs.coreutils}/bin/mkdir -p /var/lib/sonarqube-docker/conf ; \
-                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/sonarqube-docker/data ; \
-                 ${pkgs.coreutils}/bin/mkdir -p /var/lib/sonarqube-docker/extensions ; \
-                 ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/sonarqube-docker ; \
-                 ${pkgs.docker}/bin/docker pull sonarqube'';
-    serviceConfig = {
-      ExecStart = ''${pkgs.docker}/bin/docker run --name sonarqube-docker -p 9000:9000 -p 9092:9092 \
-                      -v /var/lib/sonarqube-docker/conf:/opt/sonarqube/conf \
-                      -v /var/lib/sonarqube-docker/data:/opt/sonarqube/data \
-                      -v /var/lib/sonarqube-docker/extensions:/opt/sonarqube/extensions \
-                      -e SONARQUBE_JDBC_USERNAME=sonarqube \
-                      -e SONARQUBE_JDBC_PASSWORD=bobisgreat \
-                      -e SONARQUBE_JDBC_URL=jdbc:postgresql://acelpb.com/sonarqube \
-                      sonarqube
-      '';
-      ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 sonarqube-docker ; ${pkgs.docker}/bin/docker rm -f sonarqube-docker'';
-    };
-  };
-
   services = {
-
-    jenkins = {
-      enable = true;
-      port = 2711;
-      listenAddress = "localhost";
-      extraGroups = [ "docker" ];
-      packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim pkgs.python3 pkgs.docker pkgs.pythonPackages.docker_compose ];
-    };
 
     mysql = {
       enable = true;
       package = pkgs.mariadb;
-    }; 
+    };
 
     postgresql = {
       enable = true;
@@ -97,18 +53,18 @@ in
         host sonarqube sonarqube 172.17.0.0/16 md5
       '';
     };
-   
+
     fcgiwrap = {
       enable = true;
-    };    
- 
+    };
+
     phpfpm = {
       poolConfigs = {
-        deadpool = '' 
-  
+        deadpool = ''
+
           listen = /run/phpfpm/deadpool
-          listen.owner = nginx 
-          listen.group = nginx 
+          listen.owner = nginx
+          listen.group = nginx
           listen.mode = 0660
           user = nginx
           pm = dynamic
@@ -116,13 +72,13 @@ in
           pm.start_servers = 10
           pm.min_spare_servers = 5
           pm.max_spare_servers = 20
-          pm.max_requests = 500 
-          
+          pm.max_requests = 500
+
           php_flag[display_errors] = on
           php_value[date.timezone] = "Europe/Berlin"
           php_admin_value[error_log] = /var/log/phpfpm_deadpool.log
           php_admin_flag[log_errors] = on
-          php_admin_value[open_basedir] = /var/www 
+          php_admin_value[open_basedir] = /var/www
         '';
       };
     };
@@ -146,7 +102,7 @@ in
             return 301 https://$host$request_uri;
           }
         }
-      
+
         server {
           listen 80	default_server;
           listen [::]:80	default_server;
@@ -155,23 +111,23 @@ in
           location /.well-known/acme-challenge {
             root /var/www/acme.pastespace.org;
           }
-      
+
           location / {
             return 301 https://www.acelpb.com;
           }
         }
- 
+
         server {
           server_name sonarqube.acelpb.com;
           listen 443;
           listen [::]:443;
-          
+
           ssl	on;
           # ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           # ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
           ssl_certificate  /var/lib/startssl/acelpb.com/sonarqube/fullchain.pem;
           ssl_certificate_key /var/lib/startssl/acelpb.com/sonarqube/key.pem;
-          
+
           location / {
             proxy_set_header        Host $host;
             proxy_set_header        X-Real-IP $remote_addr;
@@ -186,11 +142,11 @@ in
           server_name jenkins.acelpb.com;
           listen 443;
           listen [::]:443;
-          
+
           ssl	on;
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-          
+
           location / {
             proxy_set_header        Host $host;
             proxy_set_header        X-Real-IP $remote_addr;
@@ -200,20 +156,20 @@ in
             proxy_pass http://localhost:2711;
           }
         }
- 
+
         server {
           listen 443 ssl;
           listen [::]:443 ssl;
           server_name owncloud.acelpb.com;
-       
+
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem; 
-        
+          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
+
           add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
 
           # set max upload size
           client_max_body_size 10G;
-        
+
           gzip off;
 
           location / {
@@ -225,16 +181,16 @@ in
           server_name jcm.acelpb.com;
           listen 443;
           listen [::]:443;
-          
+
           ssl	on;
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-          
+
           root /var/www/jcm;
           location / {
             index    index.html index.htm;
           }
-          
+
           location ~ \.php$ {
              index    index.php
              try_files $uri =404;
@@ -256,12 +212,12 @@ in
           ssl	on;
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-          
+
           root /var/www/jess;
           location / {
             index    index.html index.htm index.php index.pl;
           }
-          
+
           location ~ \.php$ {
              try_files $uri =404;
              include ${pkgs.nginx}/conf/fastcgi_params;
@@ -283,7 +239,7 @@ in
           server_name *.acelpb.com acelpb.com;
           listen 443;
           listen [::]:443;
-          
+
           ssl	on;
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
@@ -328,7 +284,7 @@ in
     description = "Augustin Borsu";
     isNormalUser = true;
     extraGroups = [ "wheel" "docker" ];
-    openssh.authorizedKeys.keys = [ 
+    openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDT6nGess3TiV7KCZqCzv7wqny1GYsH9bkiT6Vae2Xo8I0YgvkqD6C/QszEk28lu7CMsm2bb8bDkYKm6Ce8jTin+hyobVvlxC5fAYZK8oE4AKn1rHkDqq1wnJwTRIrB97Nc2077BHAv2OLh5G2A/uazkIWxcoIBJNne9fFXY8B98DoB4WsDtBxj7OFnDIm27qX2VtScrr7U95SGjKN6F6MUyFEcFu9GhkXLs8BS/G8oVfSSmHFTBpIeNQ69BX7NXb+mWP98ouD4yGsRSiKZHdSwjVWI1JU4MO0tGkRAZXY2p0vacp+ePh6r0ESHbVUazX4Vof7p1i35VlIg850C9iAq6xhx3b59lYVk6AyAhfj0lujz10+00EkHy6l9BmtzBV1mFmTJpMPFQQ00Hup92ihMyGNglgPs23s3lR8iLjQ7gDpNohHmFKBFSG2Jp2tEhnfuH3tz3NWn4pXPyIUWs5znRb9Sup7/XoRtelZrSEai/EUPeP5RysYMsxiRoms47rD8FWTE0hQFUrHjQzk+RGUd/OCBv3LPR6wiwfRmdIJnNg6yDahNsRiJ3bCqtwjRkdpZ1ezLAzgwNVaNRWq4EEHMfeQ7Oud7yjgdqhb0vvAy5J4ZSHM05+77sNQoAPVEYlEhYJwyfukDMprkImypVhdOplkGaqTxMDvPY46ipGjK5Q== aborsu@mbpro-gus-Ven 16 oct 2015 10:13:03 CEST"
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD3khGNPxaYdMrWPc37tlp26hg7/8ZU4CAiwu1s1Vb9cLjzQ6+efDwetn4fbR6lVuF1GeoPfWQJX/U5iaBajy7VbFpTCuZEfcJjmslRBrWU3dw4683e7rSBp6bX9Gi5BGNG+fqQFWNZqkaRye0CfWhb+SdZSJuFk6gZCj2MXl3tP9miDNvwjZ/KpmQAaxzMm9Gw7UIEO0eVClD2Ng7y7fdfIS8u6mKzqgWN0Hr8NmlpRE7jJ6XlrkYx+0rET7BDe1YKuOwFscxZmZi+cA5gAb+zwXX+upcu6pMq7brgz1hpCuJlBXJG7EGq1XqXl9MEqxT9RMfKL0fO8cS2nM7wHA3Sk/Qm+EUEKE9f/gPu2aQNSujSqc+FifHZBQicrD1fF/Ls39nIWpWrPTK2/bOJvnNfe1NkWzikRuVdVhCeMZOQfTHmhOrykh1YKPYyPPwyosPAmhbalqMi++hj7btEJhynXKRyFuyeJ7Q3xR0ETeeLPZH404KzFa0pCR9P0JSFrbHlOrCxN3wsYTFpctUkKMF4g/TivZk2xBWnJED4hOwDqwXMeUwwg8By7ZsTQsHYoJ/ukk2uANQPYCboE7C/OMOWHXxU28yMm9Ule3TfkKrzgrHVetZI/AIR7gq/52a/dFLThcB2e06mCqwAEAiXQyffliGJXg63tgUzQF/U+Jn0bQ== a.borsu@gmail.com"
     ];
@@ -343,7 +299,7 @@ in
   users.extraUsers.jess = {
     isNormalUser = true;
     description = "";
-    openssh.authorizedKeys.keys = [ 
+    openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzZlG8Vp486YVQFPpDvaZnQaq/qol4EEH1DpHvvapjeQZx8xMA0cnEXBW4DHU/GyXkAS16S3xJoJq6LD5Kb6s428I7BWw1lG4OtEh6lrkssQOeMy/TvlaJi4Uy3Dv6oXJDv87epsx9T0PcQ03PdXQchn/REBY/wFX4YlJ3KQylYBNkb1Yhan9MED/3LjU2xOrMgs56Ta6jvzciOlA5gOvOCeUdSxd1Q16zcV+rOAvn6HdGPoon6Q4rclzoUvPofxfcnVgDuKYT5LO/aH35eFmKBruYVrZ/wJKm5g4kZtaHbThfyTO9j+U3pTWBrm4EXSAB/5ezu1NaFpSBz2ReQaJ3Q== rsa-key-20160621"
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDI8bqlV1Mt0fvDo9GNc9GfpcWKEqR6G4UNcHdZkHJNPcrcyOC2UKirAnOCZTZ2LLBVKrjyMrpJSzHcgYMf/AWN1Rfqv2iWOzdsXrXKnQ2KcbGlt+HGVPmMd1aW8TtZTDWI3Ui2sjqe0QliLbiqMF7v1YfnZyiHJsYpzr3WphXVqrBfw5l7j/2LHE/jYUhExDoEUpocnJp61GvHAo0mEmy3WUILfNMNVi48yBpkl2b0sTmp9NEHpCiOtRbbeHKF0CsjlQJAwUo4DekZ8xUun4gEAGBJWbbLdpmJ9m3m8UlKKO1PpRcgIgaPBkeZKuHllmu/uTXbt82cj1CbnuDNo8ClxaPq7wKRDeHYtZS81UwOhQEyRL+R23Ri3zNGoDTDQoTCS81y+flXk9INferB/4Q/j4gAAae/sXj3EbjsLw6ryTQ1NJhyH40o7/bHBGUFftEJHoYcNLUOQwjNFr9cl7w/IgJtKkrJMLCDDGf2Xbwy8ZMq/rNnysLRO98FMnirtyxFzqyXCnijcaep8+e462lYlHKzTNALP3s3qL8TAUxkBCuHNR2s/by7+iBE318Qh2RMK5GhYoPjDznKtV9g2Kw1zYdCbAmaSHxXQHwJtHpZEJUcURxO3c06AdCkQM64UGrVhw99M68Qs5jEY2UAU9hjdKXYtS0A9csWr2AezNm6lQ== jessica@JH"
     ];
