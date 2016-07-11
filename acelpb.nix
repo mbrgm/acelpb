@@ -16,6 +16,9 @@ in
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
     bashCompletion
+    perlPackages.CGI
+    perlPackages.DBI
+    perlPackages.DBDmysql	
     git
     git-hub
     perl
@@ -246,7 +249,10 @@ in
           server_name jess.acelpb.com;
           listen 443;
           listen [::]:443;
-          
+
+          access_log /var/log/nginx/jess-access.log;
+          error_log /var/log/nginx/jess-error.log;
+
           ssl	on;
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
@@ -281,7 +287,7 @@ in
           ssl	on;
           ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
           ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-          
+
           location / {
             root /var/www/root;
           }
@@ -322,7 +328,10 @@ in
     description = "Augustin Borsu";
     isNormalUser = true;
     extraGroups = [ "wheel" "docker" ];
-    openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDT6nGess3TiV7KCZqCzv7wqny1GYsH9bkiT6Vae2Xo8I0YgvkqD6C/QszEk28lu7CMsm2bb8bDkYKm6Ce8jTin+hyobVvlxC5fAYZK8oE4AKn1rHkDqq1wnJwTRIrB97Nc2077BHAv2OLh5G2A/uazkIWxcoIBJNne9fFXY8B98DoB4WsDtBxj7OFnDIm27qX2VtScrr7U95SGjKN6F6MUyFEcFu9GhkXLs8BS/G8oVfSSmHFTBpIeNQ69BX7NXb+mWP98ouD4yGsRSiKZHdSwjVWI1JU4MO0tGkRAZXY2p0vacp+ePh6r0ESHbVUazX4Vof7p1i35VlIg850C9iAq6xhx3b59lYVk6AyAhfj0lujz10+00EkHy6l9BmtzBV1mFmTJpMPFQQ00Hup92ihMyGNglgPs23s3lR8iLjQ7gDpNohHmFKBFSG2Jp2tEhnfuH3tz3NWn4pXPyIUWs5znRb9Sup7/XoRtelZrSEai/EUPeP5RysYMsxiRoms47rD8FWTE0hQFUrHjQzk+RGUd/OCBv3LPR6wiwfRmdIJnNg6yDahNsRiJ3bCqtwjRkdpZ1ezLAzgwNVaNRWq4EEHMfeQ7Oud7yjgdqhb0vvAy5J4ZSHM05+77sNQoAPVEYlEhYJwyfukDMprkImypVhdOplkGaqTxMDvPY46ipGjK5Q== aborsu@mbpro-gus-Ven 16 oct 2015 10:13:03 CEST" ];
+    openssh.authorizedKeys.keys = [ 
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDT6nGess3TiV7KCZqCzv7wqny1GYsH9bkiT6Vae2Xo8I0YgvkqD6C/QszEk28lu7CMsm2bb8bDkYKm6Ce8jTin+hyobVvlxC5fAYZK8oE4AKn1rHkDqq1wnJwTRIrB97Nc2077BHAv2OLh5G2A/uazkIWxcoIBJNne9fFXY8B98DoB4WsDtBxj7OFnDIm27qX2VtScrr7U95SGjKN6F6MUyFEcFu9GhkXLs8BS/G8oVfSSmHFTBpIeNQ69BX7NXb+mWP98ouD4yGsRSiKZHdSwjVWI1JU4MO0tGkRAZXY2p0vacp+ePh6r0ESHbVUazX4Vof7p1i35VlIg850C9iAq6xhx3b59lYVk6AyAhfj0lujz10+00EkHy6l9BmtzBV1mFmTJpMPFQQ00Hup92ihMyGNglgPs23s3lR8iLjQ7gDpNohHmFKBFSG2Jp2tEhnfuH3tz3NWn4pXPyIUWs5znRb9Sup7/XoRtelZrSEai/EUPeP5RysYMsxiRoms47rD8FWTE0hQFUrHjQzk+RGUd/OCBv3LPR6wiwfRmdIJnNg6yDahNsRiJ3bCqtwjRkdpZ1ezLAzgwNVaNRWq4EEHMfeQ7Oud7yjgdqhb0vvAy5J4ZSHM05+77sNQoAPVEYlEhYJwyfukDMprkImypVhdOplkGaqTxMDvPY46ipGjK5Q== aborsu@mbpro-gus-Ven 16 oct 2015 10:13:03 CEST"
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD3khGNPxaYdMrWPc37tlp26hg7/8ZU4CAiwu1s1Vb9cLjzQ6+efDwetn4fbR6lVuF1GeoPfWQJX/U5iaBajy7VbFpTCuZEfcJjmslRBrWU3dw4683e7rSBp6bX9Gi5BGNG+fqQFWNZqkaRye0CfWhb+SdZSJuFk6gZCj2MXl3tP9miDNvwjZ/KpmQAaxzMm9Gw7UIEO0eVClD2Ng7y7fdfIS8u6mKzqgWN0Hr8NmlpRE7jJ6XlrkYx+0rET7BDe1YKuOwFscxZmZi+cA5gAb+zwXX+upcu6pMq7brgz1hpCuJlBXJG7EGq1XqXl9MEqxT9RMfKL0fO8cS2nM7wHA3Sk/Qm+EUEKE9f/gPu2aQNSujSqc+FifHZBQicrD1fF/Ls39nIWpWrPTK2/bOJvnNfe1NkWzikRuVdVhCeMZOQfTHmhOrykh1YKPYyPPwyosPAmhbalqMi++hj7btEJhynXKRyFuyeJ7Q3xR0ETeeLPZH404KzFa0pCR9P0JSFrbHlOrCxN3wsYTFpctUkKMF4g/TivZk2xBWnJED4hOwDqwXMeUwwg8By7ZsTQsHYoJ/ukk2uANQPYCboE7C/OMOWHXxU28yMm9Ule3TfkKrzgrHVetZI/AIR7gq/52a/dFLThcB2e06mCqwAEAiXQyffliGJXg63tgUzQF/U+Jn0bQ== a.borsu@gmail.com"
+    ];
   };
 
   users.extraUsers.jcm = {
@@ -334,9 +343,11 @@ in
   users.extraUsers.jess = {
     isNormalUser = true;
     description = "";
-    openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzZlG8Vp486YVQFPpDvaZnQaq/qol4EEH1DpHvvapjeQZx8xMA0cnEXBW4DHU/GyXkAS16S3xJoJq6LD5Kb6s428I7BWw1lG4OtEh6lrkssQOeMy/TvlaJi4Uy3Dv6oXJDv87epsx9T0PcQ03PdXQchn/REBY/wFX4YlJ3KQylYBNkb1Yhan9MED/3LjU2xOrMgs56Ta6jvzciOlA5gOvOCeUdSxd1Q16zcV+rOAvn6HdGPoon6Q4rclzoUvPofxfcnVgDuKYT5LO/aH35eFmKBruYVrZ/wJKm5g4kZtaHbThfyTO9j+U3pTWBrm4EXSAB/5ezu1NaFpSBz2ReQaJ3Q== rsa-key-20160621" ];
+    openssh.authorizedKeys.keys = [ 
+      "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzZlG8Vp486YVQFPpDvaZnQaq/qol4EEH1DpHvvapjeQZx8xMA0cnEXBW4DHU/GyXkAS16S3xJoJq6LD5Kb6s428I7BWw1lG4OtEh6lrkssQOeMy/TvlaJi4Uy3Dv6oXJDv87epsx9T0PcQ03PdXQchn/REBY/wFX4YlJ3KQylYBNkb1Yhan9MED/3LjU2xOrMgs56Ta6jvzciOlA5gOvOCeUdSxd1Q16zcV+rOAvn6HdGPoon6Q4rclzoUvPofxfcnVgDuKYT5LO/aH35eFmKBruYVrZ/wJKm5g4kZtaHbThfyTO9j+U3pTWBrm4EXSAB/5ezu1NaFpSBz2ReQaJ3Q== rsa-key-20160621"
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDI8bqlV1Mt0fvDo9GNc9GfpcWKEqR6G4UNcHdZkHJNPcrcyOC2UKirAnOCZTZ2LLBVKrjyMrpJSzHcgYMf/AWN1Rfqv2iWOzdsXrXKnQ2KcbGlt+HGVPmMd1aW8TtZTDWI3Ui2sjqe0QliLbiqMF7v1YfnZyiHJsYpzr3WphXVqrBfw5l7j/2LHE/jYUhExDoEUpocnJp61GvHAo0mEmy3WUILfNMNVi48yBpkl2b0sTmp9NEHpCiOtRbbeHKF0CsjlQJAwUo4DekZ8xUun4gEAGBJWbbLdpmJ9m3m8UlKKO1PpRcgIgaPBkeZKuHllmu/uTXbt82cj1CbnuDNo8ClxaPq7wKRDeHYtZS81UwOhQEyRL+R23Ri3zNGoDTDQoTCS81y+flXk9INferB/4Q/j4gAAae/sXj3EbjsLw6ryTQ1NJhyH40o7/bHBGUFftEJHoYcNLUOQwjNFr9cl7w/IgJtKkrJMLCDDGf2Xbwy8ZMq/rNnysLRO98FMnirtyxFzqyXCnijcaep8+e462lYlHKzTNALP3s3qL8TAUxkBCuHNR2s/by7+iBE318Qh2RMK5GhYoPjDznKtV9g2Kw1zYdCbAmaSHxXQHwJtHpZEJUcURxO3c06AdCkQM64UGrVhw99M68Qs5jEY2UAU9hjdKXYtS0A9csWr2AezNm6lQ== jessica@JH"
+    ];
   };
-
 }
 
 
