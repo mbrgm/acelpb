@@ -13,7 +13,7 @@ in
     ];
 
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 3306 5432 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 3306 5432 7676 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
 
   # Select internationalisation properties.
@@ -293,7 +293,10 @@ in
   users.extraUsers.jcm = {
     isNormalUser = true;
     description = "Jean-Christophe Maigrot";
-    openssh.authorizedKeys.keys = [ "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDKjZS/Z37B0kZ1jfWXNQGEsNU9LM2Y2YcghHqFiO5IuWSu+XzFoRdeeFfcsfF/j5uQbWy+23z2CvuivsdNAdqS4Gl7X+wAg9pG9A+h9BRWEjGN/Llpq0NOPeiFSgLOxFuu4VOU6QzVPpgSLLWqM+av3Ib8q5UHCE49CPIcptwnOFmSQtvk6nDtbZpb9WA+MnL+xOp1P1nXu9JbpUUvCcZuqYWSrg+OMEkFv9ujTzK9uEnUMgQq4N7o4swUpXcs1dKt9Ev96Pr+GlSmcr567l+Ach2nX6+4l01ygzCCzEEzyodFT8qf8xGw3Aak+38Bu/qcqtHXNxPQ4IQgFyhyiyFl jcm@acelpb-" ];
+    openssh.authorizedKeys.keys = [
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgI+1SB4q+Lvo+BNvYONgKW83qoamw8yuUFXMsXciNbgMqI5X9/tlGtnaHOKU6FO1a0F423nJu2ZgK0Cn7ZggUEpIxZvA36pXeYNNkQExdUEEuEhcmdHzlAgnh45qGCElUH0zYeor0xyH6it0/anOe7Pb+NFjMTFfllWHdD/JsDt3/n4CrRActsCrgjKA9dGKiao8IsKocJ3KT4z0aywDzwg8XlwxQPIWJ4f8pbPYG8xDNafxjl0S/NSGv6SJyPK2RuF08JkRUgmqJ5tB3JavUWHMJYjH5zvjMa5iPwCPTzp4odrj+kp4aDflqivuraDQknpQMZ9NvTCIKhksXnLsD bigboss@bigboss-laptop-hp"
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDKjZS/Z37B0kZ1jfWXNQGEsNU9LM2Y2YcghHqFiO5IuWSu+XzFoRdeeFfcsfF/j5uQbWy+23z2CvuivsdNAdqS4Gl7X+wAg9pG9A+h9BRWEjGN/Llpq0NOPeiFSgLOxFuu4VOU6QzVPpgSLLWqM+av3Ib8q5UHCE49CPIcptwnOFmSQtvk6nDtbZpb9WA+MnL+xOp1P1nXu9JbpUUvCcZuqYWSrg+OMEkFv9ujTzK9uEnUMgQq4N7o4swUpXcs1dKt9Ev96Pr+GlSmcr567l+Ach2nX6+4l01ygzCCzEEzyodFT8qf8xGw3Aak+38Bu/qcqtHXNxPQ4IQgFyhyiyFl jcm@acelpb-"
+    ];
   };
 
   users.extraUsers.jess = {
