@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   services = {
     jenkins = {
@@ -6,7 +6,19 @@
       port = 2711;
       listenAddress = "localhost";
       extraGroups = [ "docker" ];
-      packages = [ pkgs.stdenv pkgs.git pkgs.jdk config.programs.ssh.package pkgs.nix pkgs.sbt pkgs.maven pkgs.vim pkgs.python3 pkgs.docker pkgs.pythonPackages.docker_compose ];
+      packages = [
+        pkgs.coreutils
+        pkgs.stdenv
+        pkgs.git
+        pkgs.jdk
+        config.programs.ssh.package
+        pkgs.nix
+        pkgs.sbt
+        pkgs.maven
+        pkgs.docker
+        pkgs.pythonPackages.docker_compose
+        pkgs.bash
+      ];
     };
   };
 }
