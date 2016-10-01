@@ -63,27 +63,28 @@ in
     };
 
     phpfpm = {
-      poolConfigs = {
-        deadpool = ''
+      pools = {
+        deadpool = {
+          listen = "/run/phpfpm/deadpool";
+          extraConfig = ''
+            listen.owner = nginx
+            listen.group = nginx
+            listen.mode = 0660
+            user = nginx
+            pm = dynamic
+            pm.max_children = 75
+            pm.start_servers = 10
+            pm.min_spare_servers = 5
+            pm.max_spare_servers = 20
+            pm.max_requests = 500
 
-          listen = /run/phpfpm/deadpool
-          listen.owner = nginx
-          listen.group = nginx
-          listen.mode = 0660
-          user = nginx
-          pm = dynamic
-          pm.max_children = 75
-          pm.start_servers = 10
-          pm.min_spare_servers = 5
-          pm.max_spare_servers = 20
-          pm.max_requests = 500
-
-          php_flag[display_errors] = on
-          php_value[date.timezone] = "Europe/Berlin"
-          php_admin_value[error_log] = /var/log/phpfpm_deadpool.log
-          php_admin_flag[log_errors] = on
-          php_admin_value[open_basedir] = /var/www
-        '';
+            php_flag[display_errors] = on
+            php_value[date.timezone] = "Europe/Berlin"
+            php_admin_value[error_log] = /var/log/phpfpm_deadpool.log
+            php_admin_flag[log_errors] = on
+            php_admin_value[open_basedir] = /var/www
+          '';
+        };
       };
     };
 
