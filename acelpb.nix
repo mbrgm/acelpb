@@ -7,9 +7,7 @@ in
 {
   imports =
     [
-      ./sonarqube.nix
       ./owncloud.nix
-      ./jenkins.nix
     ];
 
   nix.gc.automatic = true;
@@ -123,45 +121,6 @@ in
           }
         }
 
-        server {
-          server_name sonarqube.acelpb.com;
-          listen 443;
-          listen [::]:443;
-
-          ssl	on;
-          # ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          # ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-          ssl_certificate  /var/lib/startssl/acelpb.com/sonarqube/fullchain.pem;
-          ssl_certificate_key /var/lib/startssl/acelpb.com/sonarqube/key.pem;
-
-          location / {
-            proxy_set_header        Host $host;
-            proxy_set_header        X-Real-IP $remote_addr;
-            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $scheme;
-            proxy_redirect http:// https://;
-            proxy_pass http://localhost:2713;
-          }
-        }
-
-        server {
-          server_name jenkins.acelpb.com;
-          listen 443;
-          listen [::]:443;
-
-          ssl	on;
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-
-          location / {
-            proxy_set_header        Host $host;
-            proxy_set_header        X-Real-IP $remote_addr;
-            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $scheme;
-            proxy_redirect http:// https://;
-            proxy_pass http://localhost:2711;
-          }
-        }
 
         server {
           listen 443 ssl;
@@ -271,10 +230,8 @@ in
         extraDomains = {
           "jess.acelpb.com" = null;
           "jcm.acelpb.com" = null;
-          "sonarqube.acelpb.com" = null;
           "owncloud.acelpb.com" = null;
           "www.acelpb.com" = null;
-          "jenkins.acelpb.com" = null;
         };
       email = "a.borsu@gmail.com";
       postRun = "systemctl reload nginx.service";
