@@ -12,6 +12,12 @@ in
       ./jenkins.nix
     ];
 
+  nix.gc.automatic = true;
+  nix.gc.dates = "03:15";
+
+  system.autoUpgrade.channel = https://nixos.org/channels/nixos-16.09;
+  system.autoUpgrade.enable = true;
+
   networking.firewall.allowPing = true;
   networking.firewall.allowedTCPPorts = [ 22 80 443 3306 5432 7676 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
