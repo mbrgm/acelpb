@@ -15,7 +15,7 @@
                       -v /var/lib/owncloud-docker/apps:/var/www/html/apps \
                       -v /var/lib/owncloud-docker/config:/var/www/html/config \
                       -v /var/lib/owncloud-docker/data:/var/www/html/data \
-                      owncloud
+                      owncloud:9.0
       '';
       ExecStop = ''${pkgs.docker}/bin/docker stop -t 2 owncloud-docker ; ${pkgs.docker}/bin/docker rm -f owncloud-docker'';
     };
