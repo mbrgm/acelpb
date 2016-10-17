@@ -41,5 +41,9 @@ Additionnaly you should add this line to your /etc/hosts file:
 192.168.56.10  acelpb.local phabricator.acelpb.local gitlab.acelpb.local
 ```
 
+#TESTS
+[ssl test](https://www.ssllabs.com/ssltest/analyze.html?d=acelpb.com&latest)
+[email test](http://emailsecuritygrader.com/)
+
 Have fun with NixOS
 
