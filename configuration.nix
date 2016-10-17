@@ -17,21 +17,25 @@
   boot.loader.grub.device = "/dev/sda";
 
   # Define your hostname.
-  networking.hostName = "ns358417";
+  networking.hostName = "acelpb.com";
   networking.hostId = "385cabe4";
 
-  # IPv4 settings
-  networking.interfaces.eth0.ip4 = [
-    { address = "91.121.89.48";
-      prefixLength = 24; } ];
+  # IP settings
+  networking.interfaces.enp3s0 = {
+    ip4 = [
+      {
+        address = "91.121.89.48";
+        prefixLength = 24;
+      }
+    ];
+    ip6 = [
+      {
+        address = "2001:41D0:1:8E30::";
+        prefixLength = 64;
+      }
+    ];
+  };
   networking.defaultGateway = "91.121.89.254";
+  networking.defaultGateway6 = "2001:41D0:1:8Eff:ff:ff:ff:ff";
   networking.nameservers = [ "213.186.33.99" ];
-
-  # IPv6 settings
-  networking.localCommands =
-    ''
-      ip -6 addr add 2001:41D0:1:8E30::/64 dev enp3s0
-      ip -6 route add 2001:41D0:1:8Eff:ff:ff:ff:ff dev enp3s0
-      ip -6 route add default via 2001:41D0:1:8Eff:ff:ff:ff:ff
-    '';
 }
