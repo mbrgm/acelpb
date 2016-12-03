@@ -8,6 +8,7 @@ in
   imports =
     [
       ./owncloud.nix
+      ./test-docker.nix
     ];
 
   nix.gc.automatic = true;
@@ -17,7 +18,7 @@ in
   system.autoUpgrade.enable = true;
 
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 443 3306 5432 7676 ];
+  networking.firewall.allowedTCPPorts = [ 22 80 443 2016 3306 5432 7676 ];
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
 
   # Select internationalisation properties.
@@ -39,8 +40,8 @@ in
     wget
   ];
 
-  virtualisation.docker.enable = true;
-
+  virtualisation.docker-test.enable = true;
+  virtualisation.docker-test.restartIfChanged = true;
   services = {
 
     mysql = {
