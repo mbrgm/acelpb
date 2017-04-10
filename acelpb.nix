@@ -7,7 +7,6 @@ in
 {
   imports =
     [
-      <nixpkgs/nixos/modules/profiles/minimal.nix>
       <nixpkgs/nixos/modules/profiles/headless.nix>
       ./owncloud.nix
     ];
@@ -269,5 +268,3 @@ in
     ];
   };
 }
-
-
