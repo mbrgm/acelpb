@@ -7,14 +7,15 @@ in
 {
   imports =
     [
+      <nixpkgs/nixos/modules/profiles/minimal.nix>
+      <nixpkgs/nixos/modules/profiles/headless.nix>
       ./owncloud.nix
-      ./test-docker.nix
     ];
 
   nix.gc.automatic = true;
   nix.gc.dates = "03:15";
 
-  system.autoUpgrade.channel = https://nixos.org/channels/nixos-16.09;
+  system.autoUpgrade.channel = https://nixos.org/channels/nixos-17.03;
   system.autoUpgrade.enable = true;
 
   networking.firewall.allowPing = true;
@@ -40,8 +41,7 @@ in
     wget
   ];
 
-  virtualisation.docker-test.enable = true;
-  virtualisation.docker-test.restartIfChanged = true;
+  virtualisation.docker.enable = true;
   services = {
 
     mysql = {
