@@ -9,7 +9,7 @@
                  ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/apps ; \
                  ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/data ; \
                  ${pkgs.coreutils}/bin/mkdir -p /var/lib/owncloud-docker/config ; \
-                 ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/sonarqube-docker'';
+                 ${pkgs.coreutils}/bin/chown -R 1000 /var/lib/owncloud-docker'';
     serviceConfig = {
       ExecStart = ''${pkgs.docker}/bin/docker run --name owncloud-docker -p 2712:80 \
                       -v /var/lib/owncloud-docker/apps:/var/www/html/apps \
@@ -21,5 +21,3 @@
     };
   };
 }
-
-
