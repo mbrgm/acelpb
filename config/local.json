@@ -1,0 +1,17 @@
+{
+  "hostname": "localacelpb.com",
+  "owncloud": {
+    "forceSSL": false
+  },
+  "virtualHosts": {
+    "test.localacelpb.com": {
+      "forceSSL": false,
+      "enableACME": false,
+      "locations": {
+        "/": {
+          "root": "/home/"
+        }
+      }
+    }
+  }
+}

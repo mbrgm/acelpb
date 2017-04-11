@@ -1,10 +1,8 @@
 # Configuration file for acelpb.nix
 { config, pkgs, ... }:
-let
-  myCfg = builtins.fromJSON (builtins.readFile ./private/config.json);
-
-in
 {
+
+
   imports =
     [
       <nixpkgs/nixos/modules/profiles/headless.nix>
@@ -88,152 +86,10 @@ in
       };
     };
 
-    nginx = {
-
-      enable = true;
-
-      httpConfig = ''
-        error_log /var/log/nginx/error.log;
-
-        ssl_session_cache shared:ssl_session_cache:10m;
-
-        # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
-        ssl_dhparam /etc/nginx/ssl/dhparam.pem;
-
-        ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
-        ssl_prefer_server_ciphers on;
-
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-
-        server {
-          listen 80	default_server;
-          listen [::]:80	default_server;
-          server_name _;
-
-          add_header HTTPS-ONLY "BAD_CLIENT";
-
-          location /.well-known/acme-challenge {
-            root /var/www/acme.pastespace.org;
-          }
-
-          location / {
-            return 301 https://$host$request_uri;
-          }
-        }
-
-        server {
-          listen 443 ssl;
-          listen [::]:443 ssl;
-          server_name owncloud.acelpb.com;
-
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-
-          # set max upload size
-          client_max_body_size 10G;
-
-          gzip off;
-
-          location / {
-            proxy_pass http://localhost:2712;
-          }
-        }
-
-        server {
-          server_name jcm.acelpb.com;
-          listen 443;
-          listen [::]:443;
-
-          ssl	on;
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-
-          root /var/www/jcm;
-          location / {
-            index    index.html index.htm;
-          }
-
-          location ~ \.php$ {
-             index    index.php
-             try_files $uri =404;
-             include ${pkgs.nginx}/conf/fastcgi_params;
-             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-             fastcgi_pass   unix:/run/phpfpm/deadpool;
-             fastcgi_index  index.php;
-          }
-        }
-
-        server {
-          server_name jess.acelpb.com;
-          listen 443;
-          listen [::]:443;
-
-          access_log /var/log/nginx/jess-access.log;
-          error_log /var/log/nginx/jess-error.log;
-
-          ssl	on;
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-
-          root /var/www/jess;
-          location / {
-            index    index.html index.htm index.php index.pl;
-          }
-
-          location ~ \.php$ {
-             try_files $uri =404;
-             include ${pkgs.nginx}/conf/fastcgi_params;
-             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-             fastcgi_pass   unix:/run/phpfpm/deadpool;
-             fastcgi_index  index.php;
-          }
-
-          location ~ \.pl$ {
-             try_files $uri =404;
-             include ${pkgs.nginx}/conf/fastcgi_params;
-             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-             fastcgi_pass   unix:/run/fcgiwrap.sock;
-             fastcgi_index  index.pl;
-          }
-        }
-
-        server {
-          server_name *.acelpb.com acelpb.com;
-          listen 443;
-          listen [::]:443;
-
-          ssl	on;
-          ssl_certificate  /var/lib/acme/acelpb.com/fullchain.pem;
-          ssl_certificate_key /var/lib/acme/acelpb.com/key.pem;
-
-          location / {
-            root /var/www/root;
-          }
-        }
-      '';
-
-    };
-
     openssh.enable = true;
 
     xserver.enable = false;
 
-  };
-
-  security.acme = {
-    certs = {
-      "acelpb.com" = {
-        webroot = "/var/www/acme.pastespace.org";
-        extraDomains = {
-          "jess.acelpb.com" = null;
-          "jcm.acelpb.com" = null;
-          "owncloud.acelpb.com" = null;
-          "www.acelpb.com" = null;
-        };
-      email = "a.borsu@gmail.com";
-      postRun = "systemctl reload nginx.service";
-      };
-    };
   };
 
   security.sudo.wheelNeedsPassword = false;
