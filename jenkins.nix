@@ -7,9 +7,6 @@
         forceSSL = true;
         enableACME = true;
         root = /var/lib/jenkins/war;
-        extraConfig = ''
-          ignore_invalid_headers off;
-        '';
         locations = {
           "~ \"^/static/[0-9a-fA-F]{8}\/(.*)$\"" = {
             extraConfig = "rewrite \"^/static/[0-9a-fA-F]{8}\/(.*)\" /$1 last;";
