@@ -6,7 +6,7 @@
       "jenkins.acelpb.com" = {
         forceSSL = true;
         enableACME = true;
-        root = pkgs.jenkins;
+        root = /var/lib/jenkins/war;
         extraConfig = ''
           ignore_invalid_headers off;
         '';
@@ -29,10 +29,12 @@
             extraConfig = ''
               sendfile off;
               proxy_redirect     default;
+              proxy_redirect     http://          https://;
 
-              proxy_set_header   Host             $host;
-              proxy_set_header   X-Real-IP        $remote_addr;
-              proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+              proxy_set_header   Host              $host;
+              proxy_set_header   X-Real-IP         $remote_addr;
+              proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+              proxy_set_header   X-Forwarded-Proto $scheme;
               proxy_max_temp_file_size 0;
 
               #this is the maximum upload size
