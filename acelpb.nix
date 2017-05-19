@@ -17,6 +17,12 @@
 
   networking.firewall.allowPing = true;
   networking.firewall.allowedTCPPorts = [ 22 80 443 2222 ];
+  ## Allow docker containers to contact postgres db
+  networking.firewall.extraCommands = ''iptables -A INPUT -p tcp \
+    --destination-port 5432 \
+    -m iprange --src-range 172.17.0.1-172.17.0.200 \
+    -j ACCEPT'';
+
   networking.nameservers = [ "208.67.222.222" "208.67.220.220" "8.8.8.8" "4.4.4.4" "213.186.33.99" ];
 
   # Select internationalisation properties.
