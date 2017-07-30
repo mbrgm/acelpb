@@ -8,5 +8,8 @@
       deployment.virtualbox.headless = true;
 
       imports = [ ./acelpb.nix ];
+
+      networking.hostName = "localacelpb.com";
+
     };
 }
