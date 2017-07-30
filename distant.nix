@@ -37,18 +37,12 @@
       boot.extraModulePackages = [ ];
       boot.initrd.availableKernelModules = [ "xhci_hcd" "ahci" ];
       boot.kernelModules = [ "kvm-intel" ];
+
       # Use the GRUB 2 boot loader.
       boot.loader.grub.enable = true;
       boot.loader.grub.version = 2;
       # Define on which hard drive you want to install Grub.
       boot.loader.grub.device = "/dev/sda";
-
-      # Set your time zone.
-      time.timeZone = "Europe/Amsterdam";
-
-      # Enable the OpenSSH daemon.
-      services.openssh.enable = true;
-      services.openssh.permitRootLogin = "yes";
       
       fileSystems."/" =
         { device = "/dev/disk/by-uuid/cff9a33c-0725-4d79-bb4b-2712afa21b2e";
