@@ -21,6 +21,6 @@
   services.lighttpd = {
     enable = true;
     nextcloud.enable = true;
-    # nextcloud.package = (import ./my-nextcloud.nix);
+    nextcloud.package = (import ./my-nextcloud.nix);
   };
 }

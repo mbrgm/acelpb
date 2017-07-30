@@ -55,15 +55,17 @@ in
     systemd.services.lighttpd.preStart =
       ''
         echo "Setting up Nextcloud in ${cfg.installPrefix}/"
-        ${pkgs.rsync}/bin/rsync -a --checksum "${cfg.package}/" "${cfg.installPrefix}/"
-        mkdir -p "${cfg.installPrefix}/data"
+
+        if [ ! -d ${cfg.installPrefix}/apps ]; then
+          mkdir -p "${cfg.installPrefix}"/apps
+          ${pkgs.rsync}/bin/rsync -a --checksum "${cfg.package}"/immutable_apps/* "${cfg.installPrefix}"/apps
+        fi
+        mkdir -p "${cfg.installPrefix}"/{data,config}
         chown -R ${phpfpmUser}:${phpfpmUser} "${cfg.installPrefix}"
         chmod 755 "${cfg.installPrefix}"
         chmod 700 "${cfg.installPrefix}/data"
         chmod 750 "${cfg.installPrefix}/apps"
         chmod 700 "${cfg.installPrefix}/config"
-        chmod 600 "${cfg.installPrefix}/.user.ini"
-        chmod 600 "${cfg.installPrefix}/.htaccess"
       '';
 
     services.lighttpd = {
@@ -73,7 +75,7 @@ in
             ".svg" => "image/svg+xml",
         )
         $HTTP["host"] =~ "${cfg.vhostsPattern}" {
-            alias.url += ( "${cfg.urlPrefix}" => "${cfg.installPrefix}/" )
+            alias.url += ( "${cfg.urlPrefix}" => "${cfg.package}/" )
             # Prevent direct access to the data directory, like nextcloud warns
             # about in its admin interface "Security & setup warnings".
             $HTTP["url"] =~ "^${cfg.urlPrefix}/data" {
