@@ -11,5 +11,6 @@
 
       networking.hostName = "localacelpb.com";
 
+      environment.systemPackages = [ pkgs.vim ];
     };
 }
