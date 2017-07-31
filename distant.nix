@@ -9,6 +9,7 @@
         [
           <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
           ./acelpb.nix
+          ./distant-secret.nix
         ];
 
       networking.hostName = "acelpb.com";
