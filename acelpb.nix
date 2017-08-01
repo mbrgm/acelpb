@@ -21,6 +21,10 @@
   services.lighttpd = {
     enable = true;
     nextcloud.enable = true;
-    nextcloud.package = (import ./my-nextcloud.nix);
+  };
+
+  services.postgresql = {
+    enable = true;
+    package = pkgs.postgresql96;
   };
 }
