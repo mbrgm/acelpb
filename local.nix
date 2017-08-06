@@ -1,6 +1,6 @@
 {
   acelpb =
-    { config, pkgs, ... }:
+    { config, lib, pkgs, ... }:
     {
 
       deployment.targetEnv = "virtualbox";
@@ -15,5 +15,14 @@
       networking.hostName = "localacelpb.com";
 
       environment.systemPackages = [ pkgs.vim ];
+
+      services.nginx.virtualHosts."cloud.${config.networking.hostName}" = {
+        sslCertificate = pkgs.writeText "sslCertificate" ''
+          This is a certificate;
+        '';
+        sslCertificateKey = pkgs.writeText "sslCertificateKey" ''
+          This is a certificate;
+        '';
+      };
     };
 }
