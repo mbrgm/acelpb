@@ -5,7 +5,7 @@
   imports =
     [
       <nixpkgs/nixos/modules/profiles/headless.nix>
-      ./nextcloud.nix
+      ./nextcloud
       ./normandy.nix
     ];
 
@@ -15,10 +15,6 @@
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
   services.openssh.permitRootLogin = "yes";
-
-  # Enable the openldap daemon
-  # services.openldap.enable = true;
-  # services.openldap.configDir = "/var/db/slapd.d";
 
   # Set your time zone.
   time.timeZone = "Europe/Amsterdam";

@@ -17,5 +17,6 @@
       networking.hostId = "385cabe4";
 
       services.nginx.virtualHosts."cloud.${config.networking.hostName}".enableACME = true;
+      services.nginx.virtualHosts."${config.networking.hostName}".enableACME = true;
     };
 }

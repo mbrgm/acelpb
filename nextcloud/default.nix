@@ -1,20 +1,13 @@
-# Owncloud service on docker.
+# Owncloud service
 { config, lib, pkgs, ... }:
 
 with lib;
 
 let
   cfg = config.services.nextcloud;
-  dbName = "nextcloud";
-  dbUser = "nextcloud";
-  dbPassword = "bobisgreat76times";
-  phpfpmSocketName = "/run/phpfpm/nextcloud.sock";
-  phpfpmUser = "nextcloud";
-  phpfpmGroup = "nextcloud";
   modifiedPackage = pkgs.stdenv.mkDerivation rec {
-    name = "my-nextcloud";
+    name = "instanceId-nextcloud";
     src = cfg.package;
-
     installPhase =
       ''
         mkdir -p $out
@@ -23,11 +16,21 @@ let
         ln -s ${cfg.installPrefix}/{apps,config} $out;
       '';
   };
-
+  immutableConfig = pkgs.writeText "immutable.config.php" ''
+    <?php
+    $CONFIG = array (
+      'instanceid' => 'ocuzsff6r5j8',
+      'overwrite.cli.url' => 'https://cloud.localacelpb.com',
+      'trusted_domains' => 
+      array (
+        0 => 'cloud.localacelpb.com',
+      ),
+      'datadirectory' => '${cfg.installPrefix}/data',
+    );
+  ''; 
 in
 {
   options.services.nextcloud = {
-
     enable = mkEnableOption "Nextcloud instance";
 
     package = mkOption {
@@ -46,27 +49,29 @@ in
       '';
     };
 
-    # vhosts = mkOption {
-    #   type = types.str;
-    #   default = [ "cloud.${config.networking.hostName}" ];
-    #   example = [ "owncloud.example1.org" "nextcloud.example2.org" "cloud.example3.org" ];
-    #   description = ''
-    #     A virtual host regexp filter. Change it if you want Nextcloud to only
-    #     be served from some host names, instead of all.
-    #   '';
-    # };
+    vhosts = mkOption {
+      type = types.listOf types.str;
+      default = [ "cloud.${config.networking.hostName}" ];
+      example = [ "owncloud.example1.org" "nextcloud.example2.org" "cloud.example3.org" ];
+      description = ''
+        A list of virtual hosts. They must be given as exact names if acme is enabled.
+      '';
+    };
 
-    # serverServicec = mkOption {
-    #   type = types.str;
-    #   default = config.services.nginx;
-    #   defaultText = "config.services.nginx";
-    #   example = [ "owncloud.example1.org" "nextcloud.example2.org" "cloud.example3.org" ];
-    #   description = ''
-    #     A virtual host regexp filter. Change it if you want Nextcloud to only
-    #     be served from some host names, instead of all.
-    #   '';
-    # };
+    phpfpm = mkOption {
+      type = types.attrs;
+      default = {
+        socketName = "/run/phpfpm/nextcloud.sock";
+        user = "nextcloud";
+        group = "nextcloud";
+      };
+    };
 
+    example = [ "owncloud.example1.org" "nextcloud.example2.org" "cloud.example3.org" ];
+    description = ''
+      Sepcify nextcloud's own phpfpm pool config.
+      TODO: need to make this opt-outable.
+    '';
   };
 
   config = mkIf (cfg.enable) {
@@ -79,21 +84,22 @@ in
           ${pkgs.rsync}/bin/rsync -a --checksum "${cfg.package}"/apps/* "${cfg.installPrefix}"/apps
         fi
         mkdir -p "${cfg.installPrefix}"/{data,config}
-        chown -R ${phpfpmUser}:${phpfpmUser} "${cfg.installPrefix}"
+        chown -R ${cfg.phpfpm.user}:${cfg.phpfpm.group} "${cfg.installPrefix}"
         chmod 755 "${cfg.installPrefix}"
         chmod 700 "${cfg.installPrefix}/data"
         chmod 750 "${cfg.installPrefix}/apps"
         chmod 700 "${cfg.installPrefix}/config"
-      '';
 
+        ln -sf ${immutableConfig} "${cfg.installPrefix}"/config/immutable.config.php
+      '';
 
     services.phpfpm.poolConfigs = {
       nextcloud = ''
-        listen = ${phpfpmSocketName}
+        listen = ${cfg.phpfpm.socketName}
         listen.owner = nginx
         listen.group = nginx
-        user = ${phpfpmUser}
-        group = ${phpfpmGroup}
+        user = ${cfg.phpfpm.user}
+        group = ${cfg.phpfpm.group}
         pm = dynamic
         pm.max_children = 75
         pm.start_servers = 10
@@ -103,27 +109,21 @@ in
       '';
     };
 
-    users.extraUsers.nginx.extraGroups = [ phpfpmGroup ];
+    users.extraUsers.nginx.extraGroups = [ cfg.phpfpm.group ];
 
-    users.extraGroups."${phpfpmGroup}" = {};
+    users.extraGroups."${cfg.phpfpm.group}" = {};
 
-    users.extraUsers."${phpfpmUser}" = {
-      group = phpfpmGroup;
+    users.extraUsers."${cfg.phpfpm.user}" = {
+      group = cfg.phpfpm.group;
       description = "Nextcloud server user";
     };
 
     services.nginx = {
-      commonHttpConfig = ''
-        upstream php-handler {
-          server unix:${phpfpmSocketName};
-        }
-      '';
-
       virtualHosts = {  
-        "cloud.${config.networking.hostName}" = {
+        "${builtins.head cfg.vhosts}" = {
           forceSSL = true;
           root = modifiedPackage;
-          serverAliases = [ "owncloud.${config.networking.hostName}" ];
+          serverAliases = builtins.tail cfg.vhosts;
 
           extraConfig = ''
             add_header Strict-Transport-Security "max-age=15768000; includeSubDomains; preload;";
@@ -179,7 +179,7 @@ in
                 #Avoid sending the security headers twice
                 fastcgi_param modHeadersAvailable true;
                 fastcgi_param front_controller_active true;
-                fastcgi_pass unix:${phpfpmSocketName};
+                fastcgi_pass unix:${cfg.phpfpm.socketName};
                 fastcgi_intercept_errors on;
                 fastcgi_request_buffering off;
             }
