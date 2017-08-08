@@ -7,7 +7,6 @@
 with lib;
 
 {
-
   options.services.nextcloud = {
     passwordsalt = {
       type = types.str;

@@ -5,8 +5,8 @@
   imports =
     [
       <nixpkgs/nixos/modules/profiles/headless.nix>
-      ./nextcloud
-      ./normandy.nix
+      ./modules/nextcloud
+      ./modules/normandy.nix
     ];
 
   networking.firewall.allowPing = true;
