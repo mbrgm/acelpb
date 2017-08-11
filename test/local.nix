@@ -15,6 +15,9 @@
 
       environment.systemPackages = [ pkgs.vim ];
 
+      services.nextcloud.dbPassword = "bobisgreat";
+      services.nextcloud.adminPassword = "bobisgreat";
+
       services.nginx.virtualHosts."cloud.${config.networking.hostName}" = {
         sslCertificate = pkgs.writeText "sslCertificate" (builtins.readFile ./selfsigned.crt);
         sslCertificateKey = pkgs.writeText "sslCertificate" (builtins.readFile ./selfsigned.key);

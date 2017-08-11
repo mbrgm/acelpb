@@ -19,11 +19,11 @@
   # Set your time zone.
   time.timeZone = "Europe/Amsterdam";
 
-  services.nginx.enable = true;
-  services.nextcloud.enable = true;
+  # services.nginx.enable = true;
+  # services.nextcloud.enable = true;
   
-  services.postgresql = {
-    enable = true;
-    package = pkgs.postgresql96;
-  };
+  # services.postgresql = {
+  #   enable = true;
+  #   package = pkgs.postgresql96;
+  # };
 }

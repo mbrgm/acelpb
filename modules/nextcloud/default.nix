@@ -5,17 +5,6 @@ with lib;
 
 let
   cfg = config.services.nextcloud;
-  modifiedPackage = pkgs.stdenv.mkDerivation rec {
-    name = "instanceId-nextcloud";
-    src = cfg.package;
-    installPhase =
-      ''
-        mkdir -p $out
-        find . -maxdepth 1 -execdir cp -r '{}' $out \;
-        rm -rf $out/{apps,data,config};
-        ln -s ${cfg.installPrefix}/{apps,config} $out;
-      '';
-  };
   immutableConfig = pkgs.writeText "immutable.config.php" ''
     <?php
     $CONFIG = array (
@@ -36,6 +25,23 @@ in
     package = mkOption {
       type = types.package;
       default = pkgs.nextcloud;
+      defaultText = "pkgs.nextcloud";
+      description = "Nextcloud package to use.";
+    };
+
+    modifiedPackage = mkOption {
+      type = types.package;
+      default =     pkgs.stdenv.mkDerivation rec {
+        name = "instanceId-nextcloud";
+        src = cfg.package;
+        installPhase =
+          ''
+            mkdir -p $out
+            find . -maxdepth 1 -execdir cp -r '{}' $out \;
+            rm -rf $out/{apps,data,config};
+            ln -s ${cfg.installPrefix}/{apps,config} $out;
+          '';
+      };
       defaultText = "pkgs.nextcloud";
       description = "Nextcloud package to use.";
     };
@@ -122,7 +128,7 @@ in
       virtualHosts = {  
         "${builtins.head cfg.vhosts}" = {
           forceSSL = true;
-          root = modifiedPackage;
+          root = cfg.modifiedPackage;
           serverAliases = builtins.tail cfg.vhosts;
 
           extraConfig = ''
