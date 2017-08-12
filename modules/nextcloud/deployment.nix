@@ -89,7 +89,10 @@ in
         if [ -f ${cfg.installPrefix}/config/config.php ]; then
           echo "Don't know what to do!"
         else
-          sudo -u nextcloud ${pkgs.php}/bin/php ${cfg.modifiedPackage}/occ maintenance:install \
+          ${pkgs.postgresql}/bin/createuser --no-superuser --no-createdb --no-createrole "${cfg.dbUser}" || true
+          ${pkgs.postgresql}/bin/createdb "${cfg.dbName}" -O "${cfg.dbUser}" || true
+          ${pkgs.postgresql}/bin/psql -d postgres -c "alter user ${cfg.dbUser} with password '${cfg.dbPassword}';"
+          ${pkgs.sudo}/bin/sudo -u nextcloud ${pkgs.php}/bin/php ${cfg.modifiedPackage}/occ maintenance:install \
             --database="${cfg.dbType}" \
             --database-name="${cfg.dbName}" \
             --database-host="${cfg.dbHost}" \
@@ -102,7 +105,6 @@ in
             --data-dir="${cfg.installPrefix}/data"
         fi
       '';
-
     };
   };
 }
