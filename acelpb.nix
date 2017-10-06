@@ -7,11 +7,12 @@
       <nixpkgs/nixos/modules/profiles/headless.nix>
       ./modules/nextcloud
       ./modules/normandy.nix
+      ./modules/jupyter.nix
     ];
 
   networking.firewall.allowPing = true;
   networking.firewall.allowedTCPPorts = [ 22 80 389 443 ];
-  
+
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
   services.openssh.permitRootLogin = "yes";
@@ -21,7 +22,7 @@
 
   services.nginx.enable = true;
   services.nextcloud.enable = true;
-  
+
   services.postgresql = {
     enable = true;
     package = pkgs.postgresql96;
