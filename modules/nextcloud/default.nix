@@ -9,14 +9,14 @@ let
     <?php
     $CONFIG = array (
       'instanceid' => 'ocuzsff6r5j8',
-      'overwrite.cli.url' => 'https://cloud.localacelpb.com',
-      'trusted_domains' => 
+      'overwrite.cli.url' => 'https://${head cfg.vhosts}',
+      'trusted_domains' =>
       array (
         0 => 'cloud.localacelpb.com',
       ),
       'datadirectory' => '${cfg.installPrefix}/data',
     );
-  ''; 
+  '';
 in
 {
   options.services.nextcloud = {
@@ -125,7 +125,7 @@ in
     };
 
     services.nginx = {
-      virtualHosts = {  
+      virtualHosts = {
         "${builtins.head cfg.vhosts}" = {
           forceSSL = true;
           root = cfg.modifiedPackage;
