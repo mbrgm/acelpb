@@ -5,6 +5,13 @@ with lib;
 
 let
   cfg = config.services.nextcloud;
+  transform = (li: ind: 
+    "    ${builtins.toString ind} => '${builtins.head li}',\n" + (
+      if builtins.length li == 1 
+      then  ""
+      else transform (builtins.tail li) (ind + 1)
+    )
+  );
   immutableConfig = pkgs.writeText "immutable.config.php" ''
     <?php
     $CONFIG = array (
@@ -12,7 +19,7 @@ let
       'overwrite.cli.url' => 'https://${head cfg.vhosts}',
       'trusted_domains' =>
       array (
-        0 => 'cloud.localacelpb.com',
+      ${transform cfg.vhosts 0}
       ),
       'datadirectory' => '${cfg.installPrefix}/data',
     );
