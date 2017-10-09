@@ -19,5 +19,7 @@
       services.nginx.virtualHosts."jupyter.${config.networking.hostName}".enableACME = true;
       services.nginx.virtualHosts."cloud.${config.networking.hostName}".enableACME = true;
       services.nginx.virtualHosts."${config.networking.hostName}".enableACME = true;
+
+      services.nextcloud.vhosts = [ "cloud.${config.networking.hostName}" "owncloud.${config.networking.hostName}" ];
     };
 }
