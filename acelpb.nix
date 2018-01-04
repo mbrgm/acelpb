@@ -7,7 +7,7 @@
       <nixpkgs/nixos/modules/profiles/headless.nix>
       ./modules/nextcloud
       ./modules/normandy.nix
-      ./modules/jupyter.nix
+      ./modules/jupyter
     ];
 
   networking.firewall.allowPing = true;
