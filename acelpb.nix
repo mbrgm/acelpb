@@ -11,7 +11,12 @@
     ];
 
   networking.firewall.allowPing = true;
-  networking.firewall.allowedTCPPorts = [ 22 80 389 443 ];
+  networking.firewall.allowedTCPPorts = [
+    22 # SSH
+    80 # HTTP
+    389 # LDAP
+    443 # HTTPS
+  ];
 
   programs.bash.enableCompletion = true;
 
