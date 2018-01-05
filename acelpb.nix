@@ -1,5 +1,5 @@
 # Configuration file for acelpb.nix
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 {
 
   imports =
@@ -29,6 +29,7 @@
 
   services.nginx.enable = true;
   services.nextcloud.enable = true;
+  services.jupyterhub.enable = true;
 
   services.postgresql = {
     enable = true;
