@@ -22,7 +22,6 @@
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
-  services.openssh.permitRootLogin = "yes";
 
   # Set your time zone.
   time.timeZone = "Europe/Amsterdam";
