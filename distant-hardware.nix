@@ -29,19 +29,19 @@
   boot.loader.grub.version = 2;
   # Define on which hard drive you want to install Grub.
   boot.loader.grub.device = "/dev/sda";
-  
+
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/cff9a33c-0725-4d79-bb4b-2712afa21b2e";
+    { device = "/dev/disk/by-uuid/a5a09dc5-4c9d-4f60-9af5-5741ccd10a81";
       fsType = "ext4";
     };
 
   fileSystems."/var" =
-    { device = "/dev/disk/by-uuid/21d9978f-dc8b-4ddf-bd36-48848336e583";
+    { device = "/dev/disk/by-uuid/0f9776ab-15c9-4f8f-8176-e63eef8bef77";
       fsType = "ext4";
     };
 
   fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/bf1efb96-8c05-412a-84a8-6b0068e416fe";
+    { device = "/dev/disk/by-uuid/e6653178-294b-4601-b4a0-7903724b54b8";
       fsType = "ext4";
     };
 
