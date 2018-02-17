@@ -1,11 +1,11 @@
 # Owncloud deployment
 #
-# Only use with nixops. 
-# This module contains scripts to deploy secrets and configure nextcloud. 
+# Only use with nixops.
+# This module contains scripts to deploy secrets and configure nextcloud.
 { config, lib, pkgs, ... }:
 
 with lib;
-let 
+let
   cfg = config.services.nextcloud;
 in
 {

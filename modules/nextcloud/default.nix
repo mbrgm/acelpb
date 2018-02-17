@@ -5,9 +5,9 @@ with lib;
 
 let
   cfg = config.services.nextcloud;
-  transform = (li: ind: 
+  transform = (li: ind:
     "    ${builtins.toString ind} => '${builtins.head li}',\n" + (
-      if builtins.length li == 1 
+      if builtins.length li == 1
       then  ""
       else transform (builtins.tail li) (ind + 1)
     )
@@ -106,20 +106,23 @@ in
         ln -sf ${immutableConfig} "${cfg.installPrefix}"/config/immutable.config.php
       '';
 
-    services.phpfpm.poolConfigs = {
-      nextcloud = ''
-        listen = ${cfg.phpfpm.socketName}
-        listen.owner = nginx
-        listen.group = nginx
-        user = ${cfg.phpfpm.user}
-        group = ${cfg.phpfpm.group}
-        pm = dynamic
-        pm.max_children = 75
-        pm.start_servers = 10
-        pm.min_spare_servers = 5
-        pm.max_spare_servers = 20
-        pm.max_requests = 500
-      '';
+    services.phpfpm= {
+      phpPackage = pkgs.php71;
+      poolConfigs = {
+        nextcloud = ''
+          listen = ${cfg.phpfpm.socketName}
+          listen.owner = nginx
+          listen.group = nginx
+          user = ${cfg.phpfpm.user}
+          group = ${cfg.phpfpm.group}
+          pm = dynamic
+          pm.max_children = 75
+          pm.start_servers = 10
+          pm.min_spare_servers = 5
+          pm.max_spare_servers = 20
+          pm.max_requests = 500
+        '';
+      };
     };
 
     users.extraUsers.nginx.extraGroups = [ cfg.phpfpm.group ];
